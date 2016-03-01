@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="renderer" content="webkit">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <title>Page1</title>
+    <link rel="stylesheet" type="text/css" href="css/reset.css">
+    <link rel="stylesheet" type="text/css" href="css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="css/page.css">
+</head>
+
+<body>
+    <header>
+        <div class="logo"></div>
+        <div class="menu">
+            <div class="menu-origin">
+                <span class="font-menu">MENU</span><i class="fa fa-bars fa-2x fa-white"></i>
+            </div>
+            <div class="menu-hovered">
+                <span class="font-menu">MENU</span><i class="fa fa-bars fa-2x fa-white"></i>
+            </div>
+        </div>
+    </header>
+
+    <section class="main" id="sliderContainer">
+    	<div class="item-list">
+    		<section class="bg bg1">
+	    		<div class="smart">
+			        智慧街道
+			    </div>
+			    <div class="column">
+			        <ul>
+			            <li>
+			            	<div class="column-item-origin">内部管理</div>
+			            	<div class="column-item-hovered">内部管理</div>
+			            </li>
+			            <li>
+			            	<div class="column-item-origin">服务体制</div>
+			            	<div class="column-item-hovered">服务体制</div>
+			            </li>
+			        </ul>
+			    </div>
+	    	</section>
+
+	    	<section class="bg bg2">
+	    		<div class="street">
+	    			<h2>街道服务</h2>
+	    		</div>
+	    		<div class="description">
+	    			<p>
+	    				系统拟立足“互联网+”的时代浪潮，结合目前城镇、街道的主要业务工作需求，整体规划楼宇管理；入驻企业管理；特色楼宇建设；企业间、政府与辖区企业间的互动，资源共享；税控管理；信息发布；党建信息等多方面信息。
+	    			</p>
+	    		</div>
+	    	</section>
+
+    	</div>
+
+    	<div class="btn-block btn-prev">
+    		<div class="btn-ctrl prev">
+    			<span class="btn-prev-origin fa fa-angle-left fa-white"></span>
+    			<span class="btn-prev-hovered fa fa-angle-left fa-white"></span>
+    		</div>
+    	</div>
+    	<div class="btn-block btn-next">
+    		<div class="btn-ctrl next">
+    			<span class="btn-next-origin fa fa-angle-right fa-white"></span>
+    			<span class="btn-next-hovered fa fa-angle-right fa-white"></span>
+    		</div>
+    	</div>
+    </section>
+    
+    <script src="js/jquery-2.1.4.min.js"></script>
+    <script src="js/slider.js"></script>
+
+    <script>
+    $(function() {
+    	adjustItemPosition();
+
+    	initSlider();
+    });
+
+    function initSlider () {
+    	$('#sliderContainer').slider({
+    		prevBtn : '.prev',
+    		nextBtn : '.next',
+    		elements : '.bg',
+    		list : '.item-list',
+    		switchSpeed : 350
+    	});
+    }
+
+    function adjustItemPosition () {
+
+    }
+    </script>
+</body>
+
+</html>
