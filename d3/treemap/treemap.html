@@ -46,8 +46,8 @@
 
 			d3.json("program.json", function(error, root) {
 				for (var i = 0, children = root.children, rootNode; rootNode = children[i++];) {
-					var width = 300,
-						height = 300;
+					var width = 600,
+						height = 200;
 				
 					var svg = d3.select("body").append("svg")
 						.attr("width", width)
@@ -55,7 +55,7 @@
 						.style({
 							'position' : 'absolute',
 							'left' : 100,
-							'top' : (i-1) * 310
+							'top' : (i-1) * 210
 						});
 
 					var treemap = d3.layout.treemap()
@@ -70,14 +70,14 @@
 									.data(nodes.filter(function(d){ return !d.children; }))
 									.enter()
 									.append("g");
-					var colors = [120, 150, 180, 210, 250, 280];
+
 					var rects = groups.append("rect")
 									.attr("class","nodeRect")
 									.attr("x",function(d){ return d.x; })
 									.attr("y",function(d){ return d.y; })
 									.attr("width",function(d){ return d.dx; })
 									.attr("height",function(d){ return d.dy; })
-									.style("fill",function(d,i){ return "rgb(0, "+ colors[colors.length - i - 1] +", " + (colors[i]) + ")"; });
+									.style("fill",function(d,i){ return color(d.name); });
 
 					var texts = groups.append("text")
 									.attr("class","nodeName")
