@@ -222,8 +222,15 @@ header {
 	background-size: cover;	
 }
 .block-2:hover .train {
+	animation-timing-function: ease-in-out; 
 	-webkit-animation-timing-function: ease-in-out; 
+	-moz-animation-timing-function: ease-in-out; 
+	-o-animation-timing-function: ease-in-out; 
+
     animation: train 2s steps(61) 1;
+    -webkit-animation: train 2s steps(61) 1;
+    -moz-animation: train 2s steps(61) 1;
+    -o-animation: train 2s steps(61) 1;
 }
 
 @keyframes train {
@@ -236,6 +243,36 @@ header {
     }
 }
 
+@-webkit-keyframes train {
+    0% {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: 0 -17934px;
+    }
+}
+
+
+@-moz-keyframes train {
+    0% {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: 0 -17934px;
+    }
+}
+
+@-o-keyframes train {
+    0% {
+        background-position: 0 0;
+    }
+
+    100% {
+        background-position: 0 -17934px;
+    }
+}
 
 
 #train {
