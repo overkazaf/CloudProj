@@ -1,0 +1,123 @@
+﻿<html>  
+    <head>  
+        <meta charset="utf-8">  
+        <title>矩阵树图</title>  
+    </head> 
+	<style>
+		.nodeRect {
+			stroke: white;
+			stroke-width: 2px;
+		}
+		  
+		.nodeName {
+			fill: white;
+			font-size: 12px;
+			font-family: simsun;
+		}
+	
+		.tooltip{  
+			position: absolute;
+			z-index: 9999;
+			padding: 10px;
+			width: 120;  
+			height: auto;  
+			font-family: simsun;  
+			font-size: 10px;  
+			text-align: left;  
+			border-style: solid;   
+			border-width: 1px;  
+			background-color: white;  
+			border-radius: 5px;  
+		}  
+	</style>
+  
+	<body>
+		<script src="../d3.min.js"></script>			<!--d3包与代码所在文件夹同一级目录，用../d3/d3.min.js-->
+														<!--若在更上一级目录，用../../d3/d3.min.js-->
+		<script>										
+			
+			var tooltip = d3.select("body")  
+				.append("div")  
+				.attr("class","tooltip")  
+				.style("opacity",0.0);  
+			
+			
+			
+
+			d3.json("program.json", function(error, root) {
+				for (var i = 0, children = root.children, rootNode; rootNode = children[i++];) {
+					var width = 300,
+						height = 300;
+				
+					var svg = d3.select("body").append("svg")
+						.attr("width", width)
+						.attr("height", height)
+						.style({
+							'position' : 'absolute',
+							'left' : 100,
+							'top' : (i-1) * 310
+						});
+
+					var treemap = d3.layout.treemap()
+									.size([width, height])
+									.value(function(d){ return d.attention; });
+					var nodes = treemap.nodes(rootNode);
+					var links = treemap.links(nodes);
+					
+					var color = d3.scale.category10();
+
+					var groups = svg.selectAll("g")
+									.data(nodes.filter(function(d){ return !d.children; }))
+									.enter()
+									.append("g");
+					var colors = [120, 150, 180, 210, 250, 280];
+					var rects = groups.append("rect")
+									.attr("class","nodeRect")
+									.attr("x",function(d){ return d.x; })
+									.attr("y",function(d){ return d.y; })
+									.attr("width",function(d){ return d.dx; })
+									.attr("height",function(d){ return d.dy; })
+									.style("fill",function(d,i){ return "rgb(0, "+ colors[colors.length - i - 1] +", " + (colors[i]) + ")"; });
+
+					var texts = groups.append("text")
+									.attr("class","nodeName")
+									.attr("x",function(d){ return d.x; })
+									.attr("y",function(d){ return d.y; })
+									.attr("dx","0.5em")
+									.attr("dy","1.5em")
+									.text(function(d){ 
+										return d.name; 
+									});
+									rects.on("mouseover",function(d){  
+					/* 
+					鼠标移入时， 
+						（1）通过 selection.html() 来更改提示框的文字 
+						（2）通过更改样式 left 和 top 来设定提示框的位置 
+						（3）设定提示框的透明度为1.0（完全不透明） 
+						*/  
+					  
+					tooltip.html("类别：" + d.parent.name + "<br/>" + "节目名称：" + d.name + "<br/>" + "收视率：" + d.attention ) 
+								.style("left", (d3.event.pageX) + "px")  
+								.style("top", (d3.event.pageY + 20) + "px")  
+								.style("opacity",1.0);  
+					})  
+					.on("mousemove",function(d){  
+					/* 鼠标移动时，更改样式 left 和 top 来改变提示框的位置 */  
+					  
+						tooltip.style("left", (d3.event.pageX) + "px")  
+								.style("top", (d3.event.pageY + 20) + "px");  
+					})  
+					.on("mouseout",function(d){  
+					/* 鼠标移出时，将透明度设定为0.0（完全透明）*/  
+					  
+						tooltip.style("opacity",0.0);  
+					}) 
+				}
+								
+				 
+			});
+
+		</script>
+		
+    </body>  
+</html>  

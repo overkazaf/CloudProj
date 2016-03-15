@@ -1,15 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title>Document</title>
-</head>
-<body>
-	<script src="d3.min.js"></script>
-	<script>
-		window.onload = function () {
 
-		};
-	</script>
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <style>
+    div.center {
+        width: 90%;
+        margin: 0 auto;
+    }
+    
+    .cell {
+        display: inline-block;
+        width: 20px;
+        background: #09f;
+        margin-left: 4px;
+        border: 2px solid #000;
+    }
+    
+    rect {
+        transition: all 0.3s ease-in-out;
+    }
+    
+    rect:hover {
+        fill: orange;
+    }
+    </style>
+</head>
+
+<body>
+    <script src="d3.min.js"></script>
+    <script>
+    window.onload = function() {
+        //console.log(d3.version);
+        //d3.select("body").append("p").text('Paragraph');
+        // d3.csv("food.csv", function (data) {
+        // 	console.log(data);
+        // });
+        // 
+        // var dataset = [];
+        // for (var i = 0; i < 30; i++) {
+        // 	var d = (10 + Math.random() * 30);
+        // 	dataset.push(d);
+        // }
+        // var body = d3.select('body').append('div').attr('class', 'center');
+        // var divs = body.selectAll('div')
+        // .data(dataset)
+        // .enter()
+        // .append("div")
+        // .attr("class", "cell")
+        // .style('height', function (d) {
+        // 	return d*5 + 'px'
+        // });
+        // 
+        // 
+
+        var w = 400;
+        var h = 400;
+        var dataset = [5, 10, 15, 20, 25];
+
+        //var svg = d3.select('body').append('svg').attr('width', w).attr('height', h);
+
+        // svg.selectAll('circle')
+        // 	.data(dataset)
+        // 	.enter()
+        // 	.append('circle')
+        // 	.attr('cx', function (d) {
+        // 		return d * 15;
+        // 	})
+        // 	.attr('cy', function (d) {
+        // 		return 120
+        // 	})
+        // 	.attr('r', function (r) {
+        // 		return r * (Math.random() * 4)
+        // 	})
+        // 	.attr("fill", function (d){
+        // 		return "rgb(0, 0, " + (d * 10) + ")";
+        // 	}).transition();
+        // 	
+        // svg.selectAll('rect')
+        // 	.data(dataset)
+        // 	.enter()
+        // 	.append('rect');
+
+
+        // svg.selectAll('rect')
+        // 	.data(dataset)
+        // 	.transition()
+        // 	.ease('bounce')
+        // 	.attr({
+        // 		'width': function (d) {return d*5;},
+        // 		'height': function (d) {return d*10;},
+        // 		'x': function (d, i) {return i * (w / dataset.length);},
+        // 		'y': function (d, i) {return i*20;},
+        // 		'fill': function (d){return "rgb(0, 0, " + (d * 10) + ")";}
+        // 	});
+
+        // svg.selectAll('rect')
+        // 	.on('click', function (d){
+        // 		d3.select(this)
+        // 		.transition()
+        //        			.attr("fill", "rgb(0, 200, " + (d * 10) + ")");
+        // 	});
+        // 	
+
+        var svg = d3.select("body")
+            .append('svg')
+            .attr({
+                'width': w,
+                'height': h
+            });
+        var pie = d3.layout.pie();
+
+        var outerRadius = w / 2;
+        var innerRadius = 120;
+        var arc = d3.svg.arc()
+            .innerRadius(innerRadius)
+            .outerRadius(outerRadius);
+
+        var arcs = svg.selectAll('g.arc')
+            .data(pie(dataset))
+            .enter()
+            .append('g')
+            .attr("class", "arc")
+            .attr("transform", "translate(" + outerRadius + ", " + outerRadius + ")");
+        var color = d3.scale.category10();
+
+        arcs.append("path")
+            .attr("fill", function(d, i) {
+                return color(i);
+            })
+            .attr("d", arc);
+
+        arcs.append("text").attr("transform", function(d) {
+                return "translate(" + arc.centroid(d) + ")";
+            })
+            .attr("text-anchor", "middle").text(function(d) {
+                return d.value;
+            });
+
+    };
+    </script>
 </body>
+
 </html>
