@@ -28,7 +28,9 @@
 			border-width: 1px;  
 			background-color: white;  
 			border-radius: 5px;  
-		}  
+		} 
+
+		 
 	</style>
   
 	<body>
@@ -46,8 +48,8 @@
 
 			d3.json("program.json", function(error, root) {
 				for (var i = 0, children = root.children, rootNode; rootNode = children[i++];) {
-					var width = 600,
-						height = 200;
+					var width = 400,
+						height = 140;
 				
 					var svg = d3.select("body").append("svg")
 						.attr("width", width)
@@ -55,7 +57,7 @@
 						.style({
 							'position' : 'absolute',
 							'left' : 100,
-							'top' : (i-1) * 210
+							'top' : (i-1) * 150
 						});
 
 					var treemap = d3.layout.treemap()

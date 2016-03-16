@@ -32,7 +32,45 @@
 
 		drawTree(500, 500, 2);
 
+		function dfs (root, level) {
+			var lvl = level || 0;
+			root.level = lvl;
+			if (root.children) {
+				for (var i = 0, children = root.children, child; child = children[i++];) {
+					dfs(child, lvl+1);
+				}
+			}
 
+			return root;
+		}
+
+		function isExisty (x) {
+			return x != null;
+		}
+
+		function cloneByLimit (root, key, limit) {
+			if (!root) return;
+			if (root[key] >= limit) return;
+
+			if (!isExisty(root) || typeof root != 'object') {
+				return root;
+			}
+
+			var ret = new root.constructor();
+			for (var attr in root) {
+				if (root.hasOwnProperty(attr) && attr != 'level') {
+					ret[attr] = cloneByLimit(root[attr], key, limit);
+				}
+			}
+			return ret;
+		}
+
+		function fixedLevel (root, level) {
+			var newRoot = dfs(root, 0);
+			fixedRoot = cloneByLimit(newRoot, 'depth', level);
+			console.log('fixedRoot', fixedRoot);
+			return fixedRoot;
+		}
 
 		function drawTree(width, height, limit) {
 			limit = limit || 2;
@@ -52,8 +90,9 @@
 
 
 			d3.json("program.json", function(error, root) {
+				var newRoot = fixedLevel(root, limit);
 
-				var nodes = tree.nodes(root);
+				var nodes = tree.nodes(newRoot);
 				var links = tree.links(nodes);
 				
 				var link = svg.selectAll(".link")
@@ -71,7 +110,8 @@
 				  .append("g")
 				  .attr("class", "node")
 				  .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
-				
+				  .attr("dx", function (d) {return d.x;})
+				  .attr("dy", function (d) {return d.y;})
 				node.append("circle")
 				  .attr("r", 4.5);
 				

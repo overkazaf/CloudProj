@@ -3,143 +3,331 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Document</title>
-    <style>
-    div.center {
-        width: 90%;
-        margin: 0 auto;
-    }
-    
-    .cell {
-        display: inline-block;
-        width: 20px;
-        background: #09f;
-        margin-left: 4px;
-        border: 2px solid #000;
-    }
-    
-    rect {
-        transition: all 0.3s ease-in-out;
-    }
-    
-    rect:hover {
-        fill: orange;
-    }
-    </style>
+    <title>Combined</title>
+	<link rel="stylesheet" type="text/css" href="css/d3.css">
 </head>
 
 <body>
     <script src="d3.min.js"></script>
     <script>
-    window.onload = function() {
-        //console.log(d3.version);
-        //d3.select("body").append("p").text('Paragraph');
-        // d3.csv("food.csv", function (data) {
-        // 	console.log(data);
-        // });
-        // 
-        // var dataset = [];
-        // for (var i = 0; i < 30; i++) {
-        // 	var d = (10 + Math.random() * 30);
-        // 	dataset.push(d);
-        // }
-        // var body = d3.select('body').append('div').attr('class', 'center');
-        // var divs = body.selectAll('div')
-        // .data(dataset)
-        // .enter()
-        // .append("div")
-        // .attr("class", "cell")
-        // .style('height', function (d) {
-        // 	return d*5 + 'px'
-        // });
-        // 
-        // 
 
-        var w = 400;
-        var h = 400;
-        var dataset = [5, 10, 15, 20, 25];
+    	// 配置参数
+    	var CONFIG = {
+    		Limit : 2,
+    		JsonFile : {
+    			'tree' : 'tree/program.json', // 树的json文件路径
+    			'treemap' : 'treemap/program.json' // 矩阵图的json文件路径
+    		},
+    		Rect : {
+    			'tree' : {
+    				// 左侧树的svg大小
+    				width : 600,
+    				height : 600
+    			},
+    			'treemap' : {
+    				width : 400, // 矩阵图的宽度
+    				height : 160, // 矩阵图的高度， 程序中会动态计算, 可以不配置
+    				offsetLeft : 40 // 矩阵图的左偏移量
+    			}
+    		},
+    		// 链接线的配置
+    		Line : {
+			  	x1 : 50, // 线条起点x坐标
+			  	y1 : 0, // 线条起点y坐标
+			  	x2 : 250, // 线条终点x坐标
+			  	y2 : 0, // 线条终点y坐标
+			  	stroke : '#aaa' // 线条颜色
+			}
+    	};
+    	
 
-        //var svg = d3.select('body').append('svg').attr('width', w).attr('height', h);
+    	/**
+    	 * [dfs 深度优先，修正初始的收视率数据结构]
+    	 * @param  {[type]} root  [description]
+    	 * @param  {[type]} depth   [description]
+    	 * @param  {[type]} limit [description]
+    	 * @return {[type]}       [description]
+    	 */
+    	function dfs (root, depth, limit) {
+    		if (depth >= limit - 1) {
+    			delete root.children;
+    			return root;
+    		}
+    		if (root.children) {
+    			for (var i = 0, children = root.children, child; child = children[i++];) {
+    				dfs(child, depth+1, limit);
+    			}
+    		}
 
-        // svg.selectAll('circle')
-        // 	.data(dataset)
-        // 	.enter()
-        // 	.append('circle')
-        // 	.attr('cx', function (d) {
-        // 		return d * 15;
-        // 	})
-        // 	.attr('cy', function (d) {
-        // 		return 120
-        // 	})
-        // 	.attr('r', function (r) {
-        // 		return r * (Math.random() * 4)
-        // 	})
-        // 	.attr("fill", function (d){
-        // 		return "rgb(0, 0, " + (d * 10) + ")";
-        // 	}).transition();
-        // 	
-        // svg.selectAll('rect')
-        // 	.data(dataset)
-        // 	.enter()
-        // 	.append('rect');
+    	}
+
+    	/**
+    	 * [fixedLevel 修正左侧树的入参， 限制在2层内]
+    	 * @param  {[type]} root  [根结点]
+    	 * @param  {[type]} depth [所限制的树深度]
+    	 * @return {[type]}       [description]
+    	 */
+    	function fixedLevel (root, depth) {
+			dfs(root, 0, depth);
+    		return root;
+    	}
+
+    	/**
+    	 * [isExisty 存在性验证]
+    	 * @param  {[type]}  x [变量]
+    	 * @return {Boolean}   [description]
+    	 */
+		function isExisty (x) {
+			return x != null;
+		}
+
+		/**
+		 * [cloneByLimit 带层次限制的深拷贝方法]
+		 * @param  {[type]} root  [description]
+		 * @param  {[type]} key   [description]
+		 * @param  {[type]} limit [description]
+		 * @return {[type]}       [description]
+		 */
+		function cloneByLimit (root, key, limit) {
+			if (!root) return;
+			if (root[key] == limit-1) {
+				delete root.children;
+				return;
+			};
+
+			if (!isExisty(root) || typeof root != 'object') {
+				return root;
+			}
+
+			var ret = new root.constructor();
+			for (var attr in root) {
+				if (root.hasOwnProperty(attr)) {
+					ret[attr] = cloneByLimit(root[attr], key, limit);
+				}
+			}
+			return ret;
+		}
+
+    	/**
+    	 * [drawTree 初始化]
+    	 * @return {[type]} [description]
+    	 */
+    	function initTree () {
+    		readTreeJson(function (data){
+    			drawTree({
+    				width: CONFIG.Rect['tree'].width,
+    				height: CONFIG.Rect['tree'].height,
+    				data: data,
+    				limit: CONFIG.Limit || 2
+    			});
+    		});
+    	};
+
+    	/**
+    	 * [drawTree 绘制树]
+    	 * @param  {[type]} json [配置项]
+    	 * @return {[type]}      [description]
+    	 */
+    	function drawTree (json) {
+    		var width = json['width'],
+    			height = json['height'],
+    			root = json['data'],
+    			limit = json['limit'];
+
+    		var tree = d3.layout.tree()
+				.size([width, height-200])
+				.separation(function(a, b) { return (a.parent == b.parent ? 1 : 2); });
+
+			var diagonal = d3.svg.diagonal()
+				.projection(function(d) { return [d.y, d.x]; });
+
+			var svg = d3.select("body").append("svg")
+				.attr("width", width)
+				.attr("height", height)
+				.append("g")
+				.attr("transform", "translate(40,0)");
 
 
-        // svg.selectAll('rect')
-        // 	.data(dataset)
-        // 	.transition()
-        // 	.ease('bounce')
-        // 	.attr({
-        // 		'width': function (d) {return d*5;},
-        // 		'height': function (d) {return d*10;},
-        // 		'x': function (d, i) {return i * (w / dataset.length);},
-        // 		'y': function (d, i) {return i*20;},
-        // 		'fill': function (d){return "rgb(0, 0, " + (d * 10) + ")";}
-        // 	});
+			var newRoot = fixedLevel(root, limit);
 
-        // svg.selectAll('rect')
-        // 	.on('click', function (d){
-        // 		d3.select(this)
-        // 		.transition()
-        //        			.attr("fill", "rgb(0, 200, " + (d * 10) + ")");
-        // 	});
-        // 	
+			var nodes = tree.nodes(newRoot);
+			var links = tree.links(nodes);
+			
+			var link = svg.selectAll(".link")
+			  .data(links.filter(function (d) {
+			  	return d.target.depth < limit;
+			  }))
+			  .enter()
+			  .append("path")
+			  .attr("class", "link")
+			  .attr("d", diagonal);
+			
+			var node = svg.selectAll(".node")
+			  .data(nodes.filter(function (d) {return d.depth < limit;}))
+			  .enter()
+			  .append("g")
+			  .attr("class", "node")
+			  .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+			  .attr("dx", function (d) {return d.x;})
+			  .attr("dy", function (d) {return d.y;})
+			node.append("circle")
+			  .attr("r", 4.5);
+			
+			node.append("text")
+			  .attr("dx", function(d) { return d.children ? -8 : 8; })
+			  .attr("dy", 3)
+			  .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
+			  .text(function(d) { return d.name; });
 
-        var svg = d3.select("body")
-            .append('svg')
-            .attr({
-                'width': w,
-                'height': h
-            });
-        var pie = d3.layout.pie();
 
-        var outerRadius = w / 2;
-        var innerRadius = 120;
-        var arc = d3.svg.arc()
-            .innerRadius(innerRadius)
-            .outerRadius(outerRadius);
+			// 添加连接线， 过滤根结点
+			node.filter(function (d, i) {
+				return i > 0;
+			}).append("line")
+			  .attr(CONFIG.Line);
 
-        var arcs = svg.selectAll('g.arc')
-            .data(pie(dataset))
-            .enter()
-            .append('g')
-            .attr("class", "arc")
-            .attr("transform", "translate(" + outerRadius + ", " + outerRadius + ")");
-        var color = d3.scale.category10();
+    	}
 
-        arcs.append("path")
-            .attr("fill", function(d, i) {
-                return color(i);
-            })
-            .attr("d", arc);
+    	/**
+    	 * [initTreeMap 初始化矩阵图]
+    	 * @return {[type]} [description]
+    	 */
+    	function initTreeMap () {
+    		readTreeMapJson(function (data) {
+    			drawTreeMap({
+    				width : CONFIG.Rect['treemap'].width,
+    				height : CONFIG.Rect['treemap'].height,
+    				data : data
+    			});
+    		});
+    	}
 
-        arcs.append("text").attr("transform", function(d) {
-                return "translate(" + arc.centroid(d) + ")";
-            })
-            .attr("text-anchor", "middle").text(function(d) {
-                return d.value;
-            });
+    	/**
+    	 * [drawTreeMap 绘制矩形图]
+    	 * @return {[type]} [description]
+    	 */
+    	function drawTreeMap (json) {
+    		var width = json['width'],
+    			root = json['data'];
 
-    };
+    		// 动态计算treemap的高度	
+    		var height = CONFIG.Rect['tree'].height / root.children.length;  
+
+    		for (var i = 0, children = root.children, rootNode; rootNode = children[i++];) {
+				var tooltip = d3.select("body")  
+					.append("div")  
+					.attr("class","tooltip")  
+					.style("opacity",0.0);
+
+				var svg = d3.select("body").append("svg")
+					.attr("width", width)
+					.attr("height", height - 10)
+					.style({
+						'position' : 'absolute',
+						'left' : CONFIG.Rect['tree'].width + CONFIG.Rect['treemap'].offsetLeft,
+						'top' : (i-1) * (height) + 20
+					});
+
+				var treemap = d3.layout.treemap()
+								.size([width, height])
+								.value(function(d){ return d.attention; });
+				var nodes = treemap.nodes(rootNode);
+				var links = treemap.links(nodes);
+				
+				var color = d3.scale.category10();
+
+				var groups = svg.selectAll("g")
+								.data(nodes.filter(function(d){ return !d.children; }))
+								.enter()
+								.append("g");
+
+
+				var rects = groups.append("rect")
+								.attr("class","nodeRect")
+								.attr("x",function(d){ return d.x; })
+								.attr("y",function(d){ return d.y; })
+								.attr("width",function(d){ return d.dx; })
+								.attr("height",function(d){ return d.dy; })
+								.style("fill",function(d,i){ return color(d.name); });
+
+				var texts = groups.append("text")
+								.attr("class","nodeName")
+								.attr("x",function(d){ return d.x; })
+								.attr("y",function(d){ return d.y; })
+								.attr("dx","0.5em")
+								.attr("dy","1.5em")
+								.text(function(d){ 
+									return d.name; 
+								});
+				
+						rects.on("mouseover",function(d){  
+					/* 
+					鼠标移入时， 
+						（1）通过 selection.html() 来更改提示框的文字 
+						（2）通过更改样式 left 和 top 来设定提示框的位置 
+						（3）设定提示框的透明度为1.0（完全不透明） 
+						*/  
+					  
+					tooltip.html("类别：" + d.parent.name + "<br/>" + "节目名称：" + d.name + "<br/>" + "收视率：" + d.attention ) 
+								.style("left", (d3.event.pageX) + "px")  
+								.style("top", (d3.event.pageY + 20) + "px")  
+								.style("opacity",1.0);  
+					})  
+					.on("mousemove",function(d){  
+					/* 鼠标移动时，更改样式 left 和 top 来改变提示框的位置 */  
+					  
+						tooltip.style("left", (d3.event.pageX) + "px")  
+								.style("top", (d3.event.pageY + 20) + "px");  
+					})  
+					.on("mouseout",function(d){  
+					/* 鼠标移出时，将透明度设定为0.0（完全透明）*/  
+					  
+						tooltip.style("opacity",0.0);  
+					})
+				}
+    	};
+
+
+    	/**
+    	 * [readJson 读json文件]
+    	 * @param  {[type]}   filename [description]
+    	 * @param  {Function} callback [description]
+    	 * @return {[type]}            [description]
+    	 */
+    	function readJson (filename, callback){
+    		d3.json(filename, function (err, data) {
+    			if (err) throw err;
+    			callback && callback(data);
+    		});
+    	};
+
+    	/**
+    	 * [readTreeJson 读左侧树的配置文件]
+    	 * @param  {Function} callback [description]
+    	 * @return {[type]}            [description]
+    	 */
+    	function readTreeJson (callback) {
+    		readJson(CONFIG.JsonFile['tree'], callback);
+    	}
+
+    	function readTreeMapJson (callback) {
+    		readJson(CONFIG.JsonFile['treemap'], callback);
+    	}
+
+
+    	/**
+    	 * [initApp 入口函数]
+    	 * @return {[type]} [description]
+    	 */
+    	function initApp () {
+    		initTree();
+    		initTreeMap();
+    	}
+
+    	// 初始化
+    	initApp();
+
+
     </script>
 </body>
 
