@@ -13,7 +13,7 @@
 
     	// 配置参数
     	var CONFIG = {
-    		Limit : 2,
+    		Limit : 2, 
     		JsonFile : {
     			'tree' : 'tree/program.json', // 树的json文件路径
     			'treemap' : 'treemap/program.json' // 矩阵图的json文件路径
@@ -21,13 +21,13 @@
     		Rect : {
     			'tree' : {
     				// 左侧树的svg大小
-    				width : 600,
-    				height : 600
+    				width : 600, // 左侧树svg的宽度
+    				height : 600 // 左侧树svg的高度
     			},
     			'treemap' : {
     				width : 400, // 矩阵图的宽度
     				height : 160, // 矩阵图的高度， 程序中会动态计算, 可以不配置
-    				offsetLeft : 40 // 矩阵图的左偏移量
+    				offsetLeft : 0 // 矩阵图的左偏移量
     			}
     		},
     		// 链接线的配置
@@ -43,18 +43,21 @@
 
     	/**
     	 * [dfs 深度优先，修正初始的收视率数据结构]
-    	 * @param  {[type]} root  [description]
-    	 * @param  {[type]} depth   [description]
-    	 * @param  {[type]} limit [description]
-    	 * @return {[type]}       [description]
+    	 * @param  {[Object]} root  [根节点]
+    	 * @param  {[Number]} depth   [当前深度]
+    	 * @param  {[Number]} limit [限制的深度]
+    	 * @return {[Object]}       [description]
     	 */
     	function dfs (root, depth, limit) {
     		if (depth >= limit - 1) {
+    			// 当深度到了限制层时， 删除节点的children属性并返回， 这样可以让树不往下显示分支
     			delete root.children;
     			return root;
     		}
     		if (root.children) {
+    			// 存在树的子节点的时候， 循环向下做限制的递归处理
     			for (var i = 0, children = root.children, child; child = children[i++];) {
+    				// 深度加一， 表示又向下走了一层
     				dfs(child, depth+1, limit);
     			}
     		}
@@ -62,10 +65,10 @@
     	}
 
     	/**
-    	 * [fixedLevel 修正左侧树的入参， 限制在2层内]
-    	 * @param  {[type]} root  [根结点]
-    	 * @param  {[type]} depth [所限制的树深度]
-    	 * @return {[type]}       [description]
+    	 * [fixedLevel 修正左侧树的入参，即将数据结构处理到只有两层，使d3初始化树时只显示到第二层]
+    	 * @param  {[Object]} root  [根节点]
+    	 * @param  {[Number]} depth [所限制的树深度]
+    	 * @return {[Object]}       [修正后的根节点]
     	 */
     	function fixedLevel (root, depth) {
 			dfs(root, 0, depth);
@@ -75,7 +78,7 @@
     	/**
     	 * [isExisty 存在性验证]
     	 * @param  {[type]}  x [变量]
-    	 * @return {Boolean}   [description]
+    	 * @return {Boolean}   [是否存在]
     	 */
 		function isExisty (x) {
 			return x != null;
@@ -83,10 +86,10 @@
 
 		/**
 		 * [cloneByLimit 带层次限制的深拷贝方法]
-		 * @param  {[type]} root  [description]
-		 * @param  {[type]} key   [description]
-		 * @param  {[type]} limit [description]
-		 * @return {[type]}       [description]
+		 * @param  {[type]} root  [要拷贝的对象]
+		 * @param  {[String]} key   [限制层次在数据结构中的键值]
+		 * @param  {[Number]} limit [限制的层次]
+		 * @return {[type]}       [拷贝后的新对象]
 		 */
 		function cloneByLimit (root, key, limit) {
 			if (!root) return;
@@ -109,12 +112,13 @@
 		}
 
     	/**
-    	 * [drawTree 初始化]
+    	 * [initTree 初始化左侧的树]
     	 * @return {[type]} [description]
     	 */
     	function initTree () {
     		readTreeJson(function (data){
     			drawTree({
+    				// 入参为svg的宽度、高度、json文件的数据结构以及限制的层级
     				width: CONFIG.Rect['tree'].width,
     				height: CONFIG.Rect['tree'].height,
     				data: data,
@@ -125,7 +129,7 @@
 
     	/**
     	 * [drawTree 绘制树]
-    	 * @param  {[type]} json [配置项]
+    	 * @param  {[Object]} json [接收的配置项]
     	 * @return {[type]}      [description]
     	 */
     	function drawTree (json) {
@@ -204,6 +208,7 @@
 
     	/**
     	 * [drawTreeMap 绘制矩形图]
+    	 * @param  {[Object]} json  [接收的绘制参数]
     	 * @return {[type]} [description]
     	 */
     	function drawTreeMap (json) {
@@ -224,8 +229,8 @@
 					.attr("height", height - 10)
 					.style({
 						'position' : 'absolute',
-						'left' : CONFIG.Rect['tree'].width + CONFIG.Rect['treemap'].offsetLeft,
-						'top' : (i-1) * (height) + 20
+						'left' : CONFIG.Rect['tree'].width + CONFIG.Rect['treemap'].offsetLeft + 'px',
+						'top' : (i-1) * (height) + 20 + 'px'
 					});
 
 				var treemap = d3.layout.treemap()
@@ -260,13 +265,13 @@
 									return d.name; 
 								});
 				
-						rects.on("mouseover",function(d){  
+					rects.on("mouseover",function(d){  
 					/* 
 					鼠标移入时， 
-						（1）通过 selection.html() 来更改提示框的文字 
-						（2）通过更改样式 left 和 top 来设定提示框的位置 
-						（3）设定提示框的透明度为1.0（完全不透明） 
-						*/  
+					（1）通过 selection.html() 来更改提示框的文字 
+					（2）通过更改样式 left 和 top 来设定提示框的位置 
+					（3）设定提示框的透明度为1.0（完全不透明） 
+					*/  
 					  
 					tooltip.html("类别：" + d.parent.name + "<br/>" + "节目名称：" + d.name + "<br/>" + "收视率：" + d.attention ) 
 								.style("left", (d3.event.pageX) + "px")  
@@ -289,9 +294,9 @@
 
 
     	/**
-    	 * [readJson 读json文件]
-    	 * @param  {[type]}   filename [description]
-    	 * @param  {Function} callback [description]
+    	 * [readJson 能用的基于d3的json文件读取函数]
+    	 * @param  {[String]}   filename [文件名]
+    	 * @param  {Function} callback [回调函数]
     	 * @return {[type]}            [description]
     	 */
     	function readJson (filename, callback){
@@ -303,13 +308,18 @@
 
     	/**
     	 * [readTreeJson 读左侧树的配置文件]
-    	 * @param  {Function} callback [description]
+    	 * @param  {Function} callback [配置文件读取后的回调]
     	 * @return {[type]}            [description]
     	 */
     	function readTreeJson (callback) {
     		readJson(CONFIG.JsonFile['tree'], callback);
     	}
 
+    	/**
+    	 * [readTreeMapJson 读右侧矩阵图的配置文件]
+    	 * @param  {Function} callback [配置文件读取后的回调]
+    	 * @return {[type]}            [description]
+    	 */
     	function readTreeMapJson (callback) {
     		readJson(CONFIG.JsonFile['treemap'], callback);
     	}
