@@ -1,0 +1,895 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>12.3.3 元素组合</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+
+<body style="background-color:#F6F6F6">
+    <div class="pie">
+    </div>
+    <div class="zhu">
+        <div id="figure" style="margin-bottom: 50px;"></div>
+        <div id="mysort" style="">
+            <button type="button" id="startSort">排序</button>
+        </div>
+    </div>
+    <script src="d3.min.js" charset="utf-8"></script>
+    <script>
+    var width = 600; //SVG绘制区域的宽度
+    var height = 600; //SVG绘制区域的高度
+    var radius = Math.min(width, height) / 2;
+    var BAR_DATA_LIMIT = 15;
+    var svg = d3.select(".pie") //选择<body>
+        .append("svg") //在<body>中添加<svg>
+        .attr("width", width) //设定<svg>的宽度属性
+        .attr("height", height); //设定<!-- <svg>的高度属性
+    var xMarks = [];
+
+    function getDataSet() {
+        // first step : read csv
+        //for
+        //构造一条数据
+        //endfor
+        //return dataset
+
+    }
+
+
+    //1.确定初始数据
+    var dataset = [
+        ["央视财经评论", 28, 0.000166719, "#FAE38C"],
+        ["厨王争霸", 109, 0.0000845538, "#C32F4B"],
+        ["交换空间", 56, 0.0000393604, "#E1514B"],
+        ["周末特供", 41, 0.000033719, "#F47245"],
+        ["生财有道", 28, 0.0000328174, "#FB9F59"],
+        ["消费主张", 35, 0.0000328174, "#FEC574"],
+        ["开讲啦", 50, 0.000057113, "#9E0041"],
+        ["正大综艺", 49, 0.000102934, "#EAF195"],
+        ["第一时间", 119, 0.000775889, "#C7E89E"],
+        ["交易时间", 64, 0.000926298, "#9C5A4"],
+        ["周末特供:世界厨房我的家", 17, 0.000546591, "#9F6A4"],
+        ["他们创造奇迹", 39, 0.000714759, "#9CD6A4"],
+        ["周末特供:空间榜样", 10, 0.000617472, "#9CD6A4"],
+        ["实战商学院", 43, 0.000617472],
+        ["经济半小时", 30, 0.000617472],
+        ["空间榜样", 9, 0.000617472, "#9CD6A4"],
+        ["中国大能手(2)", 59, 0.000617472, "#9CD6A4"],
+        ["经济与法", 30, 0.000617472, "#9CD6EA4"],
+        ["购时尚", 59, 0.00040725, "#9CD6A4"],
+        ["回家吃饭", 21, 0.00040725, "#9CDGA4"],
+        ["经济信息联播", 49, 0.000963699, "#9CD9A4"],
+        ["环球财经连线", 39, 0.0007516, "#9CD6A4"],
+        ["市场分析室", 31, 0.0007516, "#9WD6A4"]
+    ];
+
+
+
+
+
+    //柱状图的初始数据
+    var dataset2 = [];
+    var originDataset2 = [];
+    var csv = d3.dsv(",", "text/csv;charset=gb2312"); //设定csv的编码格式
+    csv("cctv2.csv", function(error, csvdata) { //取csv数据
+        originDataset2 = csvdata;
+    });
+    //	console.log(originDataset2);
+
+    //2.转换数据
+    var pie = d3.layout.pie()
+        .sort(d3.ascending)
+        .value(function(d) {
+            return d[1];
+        });
+
+    var piedata = pie(dataset);
+    //var piedata =pie(getDataSet());
+    //console.log(piedata);	
+    //console.log(piedata.length);
+    //3.绘制
+
+    //字体大小
+    var fontsize = 14;
+    //内圈间距，在计算拖拽距离的时候需要使用
+    var innerSpacing = 10;
+    //外半径和内半径
+    var outerRadius = radius / 1.6;
+    var innerRadius = 0.1 * radius;
+
+    // var colors = ["#ADDCC8","#D9EEC3","#FED2B5","#F7A7A6","#ECE674","#84AF9C","#638473"];
+
+
+
+
+    //饼状图的圆的圆心和半径
+    var piecircle = {
+        cx: width / 2,
+        cy: height / 2,
+        r: outerRadius
+    };
+    var outlineArc = d3.svg.arc() //外圈
+        .innerRadius(innerRadius * 1.35)
+        .outerRadius(outerRadius);
+
+
+    //创建弧生成器
+    var arc = d3.svg.arc()
+        .innerRadius(innerRadius + innerSpacing)
+        .outerRadius(function(d) {
+            return (radius - innerRadius) * (d.data[2] * 500.0) + innerRadius + innerSpacing;
+        });
+    var arc1 = d3.svg.arc()
+        .innerRadius(innerRadius + innerSpacing)
+        .outerRadius(outerRadius);
+    //	var colorcolor = d3.scale.category20();
+    var color = ["#0068B7", "#FF8C00", "#FFF799", "#FF0000", "#F29C9F", "#00A0E9", "#FFEE00", "#00B7EE", "#82B6E8", "#F3B6A2", "#DBC492", "#C8E39C", "#566B9A", "#D9C290", "#0B915E", "#9F92EF", "#38B6B5", "#D3758F", "#F1D898", "#F16C78", "#2D4381", "#F1F29A", "#3CB271", "#CA8D84", "#E7DAC9", "#EC9577", "#33B5B4", "#D5B157", "#A092F1", "#09905C", "#3AB16F", "#39B270", "#FF6766", "#689AFE", "#E8F787", "#058E5B", "#B0A8F0"];
+    redraw();
+
+    function redraw() { //重绘函数
+
+        //console.log(piedata);
+        //console.log(piedata.length);
+        //获取update部分
+        var arcsUpdate = svg.selectAll(".arcGroup")
+            .data(piedata, function(d) {
+                return d.data[0];
+            });
+        //获取enter部分
+        var arcsEnter = arcsUpdate.enter();
+        //获取exit部分
+        var arcsExit = arcsUpdate.exit();
+
+        //1. update部分的处理办法
+        arcsUpdate.call(setAttributes);
+
+        //2. enter部分的处理办法
+        var newArcs = arcsEnter.append("g")
+            .attr("class", "arcGroup");
+
+        //添加弧
+        newArcs.append("path")
+            .attr("class", "arcPath");
+
+        //添加弧内文字
+        //newArcs.append("text")
+        //		.attr("class","percent");
+
+        //添加弧外文字
+        newArcs.append("text")
+            .attr("class", "company");
+
+        //添加连接文字的直线1
+        newArcs.append("line")
+            .attr("class", "conLine1");
+
+        //添加连接文字的直线2
+        newArcs.append("line")
+            .attr("class", "conLine2");
+
+        newArcs.call(setAttributes);
+
+        //3. exit部分的处理办法
+        arcsExit.remove();
+
+        //先去除所有弧线再重绘
+        svg.selectAll(".outlineArc").remove();
+        var outerPath = svg.selectAll(".outlineArc") //外圈路径
+            .data(piedata)
+            .enter()
+            .append("path")
+            .attr("fill", "none")
+            .attr("stroke", "gray")
+            .attr("class", "outlineArc")
+            .attr("d", outlineArc)
+            .attr("transform", function(d) {
+                return "translate(" + piecircle.cx + "," + piecircle.cy + ")";
+            });
+
+    }
+
+
+    function setAttributes(arcs) { //设置弧的属性
+
+        /*
+        	为每一段弧添加三个数据：
+        	circle - 饼状图所在的圆，其中包含cx、cy、r三个属性
+        	dx - x方向的相对偏移量，拖拽事件触发时使用
+        	dy - y方向的相对偏移量，拖拽事件触发时使用
+        */
+        arcs.each(function(d) {
+            d.circle = piecircle;
+            d.dx = 0;
+            d.dy = 0;
+        });
+
+        arcs.attr("transform", function(d) {
+            return "translate(" + d.circle.cx + "," + d.circle.cy + ")";
+        });
+
+        //绘制弧
+        arcs.select(".arcPath")
+            .attr("fill", function(d, i) {
+                //return color(d.data[0]);	//设定弧的颜色
+                // return d.data[3];
+                return color[i];
+            })
+            .attr("d", function(d) {
+                return arc(d); //使用弧生成器
+            });
+
+        //绘制弧内的文字
+        arcs.append("text")
+            .attr("transform", function(d) {
+                var x = arc1.centroid(d)[0] * 1.5; //文字的x坐标
+                var y = arc1.centroid(d)[1] * 1.5; //文字的y坐标
+                return "translate(" + x + "," + y + ")";
+            })
+            .attr("text-anchor", "middle")
+            .style("font-size", 11)
+            .style("fill", "orangered")
+            .text(function(d) {
+                //计算市场份额的百分比
+                var percent = Number(d.data[2]) / d3.sum(piedata, function(d) {
+                    return d.data[2];
+                }) * 100;
+
+                //保留1位小数点，末尾加一个百分号返回
+                return percent.toFixed(1) + "%";
+                //return d.data[0];
+            });
+
+        //绘制连接弧外文字的直线
+        arcs.select(".conLine1")
+            //.style("stroke","black")
+            .attr("stroke", function(d, i) {
+                //return color(d.data[0]);	//设定弧的颜色
+                // return d.data[3];
+                return color[i];
+            })
+            .attr("x1", function(d) {
+                return arc.centroid(d)[0];
+            })
+            .attr("y1", function(d) {
+                return arc.centroid(d)[1];
+            })
+            .attr("x2", function(d) {
+                return arc1.centroid(d)[0] * 1.8;
+            })
+            .attr("y2", function(d) {
+                return arc1.centroid(d)[1] * 1.8;
+            });
+
+        //绘制连接弧外文字的直线
+        arcs.select(".conLine2")
+            //.style("stroke","black")
+            .attr("stroke", function(d, i) {
+                //return color(d.data[0]);	//设定弧的颜色
+                // return d.data[3];
+                return color[i];
+            })
+            .each(function(d) {
+                d.textLine = {
+                    x1: 0,
+                    y1: 0,
+                    x2: 0,
+                    y2: 0
+                };
+            })
+            .attr("x1", function(d) {
+                d.textLine.x1 = arc1.centroid(d)[0] * 1.8;
+                return d.textLine.x1;
+            })
+            .attr("y1", function(d) {
+                d.textLine.y1 = arc1.centroid(d)[1] * 1.8;
+                return d.textLine.y1;
+            })
+            .attr("x2", function(d) {
+                var strLen = getPixelLength(d.data[0], fontsize) * 1.5;
+                var bx = arc1.centroid(d)[0] * 1.8;
+                d.textLine.x2 = bx >= 0 ? bx + strLen : bx - strLen;
+                return d.textLine.x2;
+            })
+            .attr("y2", function(d) {
+                d.textLine.y2 = arc1.centroid(d)[1] * 1.8;
+                return d.textLine.y2;
+            });
+
+        //绘制弧外文字
+        arcs.select(".company")
+            .attr("transform", function(d) {
+                var x = 0;
+                var y = 0;
+                x = d.textLine.x2;
+                x = x > 0 ? x + 30 : x - 30;
+                y = d.textLine.y1 + fontsize * 0.4; //将文字应用于水平
+                //y = y > 0 ? y + fontsize * 1.1 : y - fontsize * 0.4;
+                return "translate(" + x + "," + y + ")";
+            })
+            .style("text-anchor", "middle")
+            .style("font-size", fontsize)
+            .text(function(d) {
+                return d.data[0];
+            });
+
+        var tooltip = d3.select(".pie")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0.0);
+
+        arcs.on("mouseover", function(d, i) {
+                /*nodes_img.on("mouseover",function(d,i){
+                		
+                		鼠标移入时，
+                		（1）通过 selection.html() 来更改提示框的文字
+                		（2）通过更改样式 left 和 top 来设定提示框的位置
+                		（3）设定提示框的透明度为1.0（完全不透明）
+                		*/
+
+                tooltip.html("《" + d.data[0] + "》" + "<br/>" + "<span style='color:orangered'>" + "收视率为" + ":" + d.data[2] + "<br />" + "节目时长为" + ":" + d.data[1] + "min")
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY + 1) + "px")
+                    .style("opacity", 0.7);
+
+
+                // color(i) 为被选择图形的颜色
+                tooltip.style("box-shadow", "10px 0px 0px " + color[i]);
+            })
+            .on("mousemove", function(d) {
+                /* 鼠标移动时，更改样式 left 和 top 来改变提示框的位置 */
+
+                tooltip.style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY + 1) + "px");
+            })
+            .on("mouseout", function(d) {
+                /* 鼠标移出时，将透明度设定为0.0（完全透明）*/
+
+                tooltip.style("opacity", 0.0);
+            })
+
+        //交互式
+        var drag = d3.behavior.drag()
+            .origin(null)
+            .on("drag", dragmove)
+            .on("dragend", dragend);
+
+        d3.selectAll(".arcPath")
+            .on("click", clickModel);
+
+
+        //点击饼图事件
+        function clickModel(d) {
+            var clickName = d.data[0];
+            checkData(clickName);
+        }
+
+        //处理柱状图的数据
+        function checkData(clickName) {
+            //var newData = {};
+            dataset2 = [];
+            var cnt = 0;
+            originDataset2.forEach(function(data) {
+                if (cnt >= BAR_DATA_LIMIT) return;
+                if (clickName == data.name) {
+                    var attention = Number(data.attention) * 10000;
+                    attention = attention.toFixed(2);
+                    dataset2.push(attention);
+                    cnt++;
+                }
+            });
+            //console.log(dataset2);
+            histogram(clickName);
+        }
+        //checkData(dataset[0][0]);
+
+        //正在拖拽事件（drag）被触发时的监听器
+        function dragmove(d) {
+            d.dx += d3.event.dx; //加鼠标x方向的偏移量
+            d.dy += d3.event.dy; //加鼠标y方向的偏移量
+
+
+
+            //为被拖拽的弧的平移属性设定新的值
+            d3.select(this)
+                .attr("transform", "translate(" + (d.dx + d.circle.cx) + "," +
+                    (d.dy + d.circle.cy) + ")");
+        }
+
+        //拖拽结束事件（dragend）被触发时的监听器
+        function dragend(d, i) {
+            if (d3.event.dx == 0 && d3.event.dy == 0) {
+                clickModel(d);
+            }
+
+            //计算被拖拽的元素到饼状图圆心距离的平方
+            var dis2 = d.dx * d.dx + d.dy * d.dy;
+            //必须要减去内圈的半径和间距
+            if (dis2 > (d.circle.r - innerRadius - innerSpacing) * (d.circle.r - innerRadius - innerSpacing)) {
+                //如果被拖到了饼状图之外
+
+                /*
+                  删除原数组dataset中的第i个元素（即被拖拽元素）
+                  被删除的元素保存在movedData中
+                */
+                //dataset["_" + i] = dataset[i];
+
+                var movedData = dataset.splice(i, 1);
+                //重新调用布局计算dataset数组，结果保存在piedata中
+                piedata = pie(dataset);
+                //console.log(piedata.length);
+                //添加一个圆，用于表示被移出的弧
+                appendCircle(movedData[0]);
+                //重绘
+                redraw();
+            }
+        }
+        //所有弧调用上面定义的拖拽行为
+        arcs.call(drag);
+
+        var circleGroups = svg.append("g");
+        //已经被移出去的元素的拖拽行为
+        var dragCircle = d3.behavior.drag()
+            .origin(null)
+            .on("drag", dragCircleMove)
+            .on("dragend", dragCricleEnd);
+
+
+        function dragCircleMove(d) {
+            d.x = d3.event.sourceEvent.offsetX;
+            d.y = d3.event.sourceEvent.offsetY;
+
+            d3.select(this)
+                .attr("transform", "translate(" + d.x + "," + d.y + ")");
+        }
+
+
+        function dragCricleEnd(d, i) {
+            //到圆心距离的平方
+            var dis2 = (d.x - piecircle.cx) * (d.x - piecircle.cx) +
+                (d.y - piecircle.cy) * (d.y - piecircle.cy);
+
+            if (dis2 < piecircle.r * piecircle.r) {
+
+                var vec = {
+                    x: d.x - piecircle.cx,
+                    y: d.y - piecircle.cy
+                };
+                var zerov = {
+                    x: 0.0,
+                    y: -1.0
+                };
+
+                var costheta = (vec.x * zerov.x + vec.y * zerov.y) / (norm(vec) * norm(zerov));
+
+                var theta = Math.acos(costheta);
+
+                theta = d.x < piecircle.cx ? 2 * Math.PI - theta : theta;
+
+                var index;
+                for (var j = 0; j < piedata.length; j++) {
+                    if (theta >= piedata[j].startAngle && theta <= piedata[j].endAngle) {
+                        index = j;
+                        break;
+                    }
+                }
+
+                dataset[index][0] += " & " + d[0];
+                dataset[index][1] += d[1];
+
+                piedata = pie(dataset);
+
+                d3.select(this).remove();
+
+                redraw();
+            }
+        }
+
+
+        function appendCircle(data) {
+            //console.log(d3.event.sourceEvent);
+
+            //为拖拽出来的图形增加新元素
+            gCircle = circleGroups.append("g")
+                .datum(data)
+                .attr("class", "movedArc")
+                .attr("transform", "translate(" + d3.event.sourceEvent.offsetX + "," + d3.event.sourceEvent.offsetY + ")")
+                .call(dragCircle);
+
+            gCircle.append("circle")
+                .attr("cx", 0)
+                .attr("cy", 0)
+                .attr("r", 20)
+                //.style("fill",function(d,i){
+                .style("fill", function(d, i) {
+                    //return color(d[2]);
+                    return color[i];
+                });
+
+            gCircle.append("text")
+                .attr("dx", "22px")
+                .attr("dy", ".4em")
+                .text(function(d) {
+                    return d[0];
+                });
+        }
+
+    }
+
+
+    function getPixelLength(str, fontsize) {
+        /*var curLen = 0;
+        for(var i=0;i<str.length;i++){
+        	var code = str.charCodeAt(i);
+        	var pixelLen = code > 255 ? fontsize : fontsize/2;
+        	curLen += pixelLen;
+        }
+        */
+        return 15;
+    }
+
+    function norm(vec) {
+        return Math.sqrt(vec.x * vec.x + vec.y * vec.y);
+    }
+    /*
+		下面部分是点击饼图事件，计算某一节目的收视率
+		初始默认取第一个节目的收视情况
+	*/
+    function histogram(clickName) {
+        var width2 = 500;
+        var height2 = 500;
+        d3.select(".histogram").remove();
+        var svg2 = d3.select(".zhu")
+            .append("svg")
+            .attr("width", width2)
+            .attr("height", height2)
+            .attr("class", "histogram");
+        var padding = {
+            left: 80,
+            right: 30,
+            top: 30,
+            bottom: 30
+        };
+        var paddings = 40
+            //用一个变量存储标题和副标题的高度，如果没有标题什么的，就为0
+        var head_height = paddings;
+        var title = "收视率差额";
+        var subTitle = "柱形图代表收视率，折线图代表差额10%";
+        //用一个变量计算底部的高度，如果不是多系列，就为0
+        var foot_height = paddings;
+        var padding = {
+            left: 30,
+            right: 30,
+            top: 30,
+            bottom: 50
+        };
+        svg2.append("g")
+            .append("rect")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", width2)
+            .attr("height", height2)
+            .style("fill", "#FFF")
+
+        //添加标题
+        if (title != "") {
+            svg2.append("g")
+                .append("text")
+                .text(title)
+                .attr("class", "title")
+                .attr("x", width2 / 2.5)
+                .attr("y", head_height);
+            head_height += 30;
+        }
+        //添加副标题
+        if (subTitle != "") {
+            svg2.append("g")
+                .append("text")
+                .text(subTitle)
+                .attr("class", "subTitle")
+                .attr("x", width2 / 4)
+                .attr("y", head_height);
+            head_height += 20;
+        }
+
+        var timeScale = d3.time.scale()
+            .domain([new Date(2015, 0, 1), new Date(2016, 1, 1)])
+            .range([0, width2 - padding.left - padding.right], 0.3);
+        //横坐标轴比例尺
+        var xScale = d3.scale.ordinal()
+            // .domain(d3.range(dataset2.length))
+            .domain(d3.range(dataset2.length))
+            .rangeRoundBands([0, width2 - padding.left - padding.right], 0.3);
+
+        //纵坐标轴比例尺
+        var yScale = d3.scale.linear()
+            .domain([d3.max(dataset2), 0])
+            .range([0, height2 - padding.top - padding.bottom]);
+        //定义横轴
+        var xAxis = d3.svg.axis()
+            .scale(xScale)
+			//.tickFormat(function(d) {return getXAxisText(d); })
+
+        .orient("bottom");
+        /*	var xAxis=d3.svg.axis()
+        	  .scale(xScale)
+        	  .orient("bottom");*/
+        //定义纵轴
+        var yAixs = d3.svg.axis()
+            .scale(yScale)
+            .orient("left");
+
+
+        //添加纵轴  
+        /* var yBar=svg2.append("g")
+        	.attr("class", "axis")
+        	.attr("transform", "translate("+padding+",0)")
+        	.call(yAixs);
+        	*/
+        //添加横坐标轴并通过编号获取对应的横轴标签
+        /*var xBar=svg2.append("g")
+						.attr("class", "axis")
+						.attr("transform", "translate(0," + (height2 - padding) + ")")
+						.call(xAxis)
+						.selectAll("text")
+						.text(function(d){return xMarks[d];});
+						
+							//产生随机数据
+					  	function getData()
+						{
+						var dataNum=15;
+						dataset=[];
+						xMarks=[];
+						for(i=1;i<dataNum;i++)
+						{
+						dataset.push(Math.round(Math.random()*height2));
+						xMarks.push("标签"+i);
+						}
+						}*/
+
+	    function getXAxisText (index, descFlag) {
+	    	var data = [];
+	    	originDataset2.forEach(function (d, i) {
+	    		if (clickName == d.name) {
+	    			data.push(d);
+	    		}
+	    	});
+	    	console.log('data', data);
+
+	    	if (descFlag) {
+	    		data = data.sort(d3.descending);
+	    	}
+
+	    	var date = data[index]['date'];
+	    	date = date.substring(0, date.lastIndexOf('/'))
+	    	return date;
+	    }
+
+        function drawLine(svg, dataset, descFlag, sortXAxis) {
+            if (!!descFlag) dataset = dataset.sort(d3.descending);
+            svg.selectAll("circle").remove();
+            svg.selectAll("path").remove();
+            svg.selectAll(".axis").remove();
+
+            // 重新计算比例尺
+            var xScale = d3.scale.ordinal()
+                // .domain(d3.range(dataset2.length))
+                .domain(d3.range(dataset.length))
+                .rangeRoundBands([0, width2 - padding.left - padding.right], 0.3);
+
+            //纵坐标轴比例尺
+            var yScale = d3.scale.linear()
+                .domain([d3.max(dataset), 0])
+                .range([0, height2 - padding.top - padding.bottom]);
+
+            var xAxis = d3.svg.axis()
+                .scale(xScale)
+                .tickFormat(function(d) {return getXAxisText(d, !!sortXAxis); })
+                .orient("bottom");
+
+            //定义纵轴
+            var yAixs = d3.svg.axis()
+                .scale(yScale)
+                .orient("left");
+
+
+            var line = d3.svg.line()
+                .x(function(d, i) {
+                    return xScale(i) + 35;
+                })
+                .y(function(d) {
+                    return yScale(d) + 20;
+                });
+
+            var path = svg.append("path")
+                .attr("d", line(dataset))
+                .style("fill", "#41DB00")
+                .style("fill", "none")
+                .style("stroke-width", 2)
+                .style("stroke", "#41DB00")
+                .style("stroke-opacity", 0.9);
+
+
+            //添加系列的小圆点
+            var tempDataset = !!descFlag ? dataset.sort(d3.descending) : dataset;
+            var fixedDataset = [];
+            tempDataset.forEach(function(d, i) {
+                if (i == 0) fixedDataset.push(d);
+                else {
+                    var last = tempDataset[i - 1]; // or fixedDataset[fixedDataset.length-1] ?
+                    var pushFlag = Math.abs(d - last) > (last * 0.1);
+                    if (pushFlag) {
+                        fixedDataset.push(d)
+                    } else {
+                        fixedDataset.push(-200)
+                    }
+                }
+            });
+
+            svg.selectAll("circle")
+                .data(fixedDataset)
+                .enter()
+                .append("circle")
+                .attr("cx", function(d, i) {
+                    return xScale(i) + 35;
+                })
+                .attr("cy", function(d) {
+                    return yScale(d) + 25;
+                })
+                .attr("r", 5)
+                .attr("fill", "#41DB00");
+
+            //添加x轴
+	        svg.append("g")
+	            .attr("class", "axis")
+	            .attr("transform", "translate(" + padding.left + "," + (height2 - padding.bottom) + ")")
+	            .call(xAxis);
+	        //	 d3.selectAll('g.tick text').attr('transform','translate(30,20)rotate(30)')//文字倾斜	
+	        //添加y轴
+	        svg.append("g")
+	            .attr("class", "axis")
+	            .attr("transform", "translate(" + padding.left + "," + padding.top + ")")
+	            .call(yAixs);
+        }
+        drawLine(svg2, dataset2)
+
+        yScale.range([height2 - padding.top - padding.bottom, 0]);
+
+        var rectPadding = 2;
+
+        var rects = svg2.selectAll(".MyRect")
+            .data(dataset2)
+            .enter()
+            .append("rect")
+            .attr("class", "MyRect")
+            .attr("x", function(d, i) {
+                return xScale(i) + padding.left;
+            })
+            .attr("y", function(d, i) {
+                return height2 - padding.bottom - yScale(d);
+            })
+            .attr("width", xScale.rangeBand())
+            .attr("height", function(d) {
+                return yScale(d);
+            })
+            .attr("fill", "#33B3ED")
+            .on("mouseover", function(d, i) {
+                d3.select(this)
+                    .attr("fill", "yellow");
+            })
+            .on("mouseout", function(d, i) {
+                d3.select(this)
+                    .transition()
+                    .duration(500)
+                    .attr("fill", "#33B3ED")
+            });
+
+        var texts = svg2.selectAll(".MyText")
+            .data(dataset2)
+            .enter()
+            .append("text")
+            .attr("class", "MyText")
+            .style("font-size", 11)
+            .style("fill", "#000")
+            .attr("transform", "translate(" + padding.left + "," + (height2 - padding.bottom) + ")")
+            .attr("x", function(d, i) {
+                return xScale(i) + padding.left;
+            })
+            .attr("y", function(d) {
+                return height2 - padding.bottom - yScale(d);
+            })
+            .attr("dx", function() {
+                return (xScale.rangeBand() - rectPadding) / 2;
+            })
+            .attr("dy", function(d) {
+                return 15;
+            })
+            .text(function(d) {
+                return d;
+            });
+
+
+        function draw() {
+            var updateRect = svg2.selectAll(".MyRect")
+                .data(dataset2);
+            var enterRect = updateRect.enter();
+            var exitRect = updateRect.exit();
+            var updateText = svg2.selectAll(".MyText")
+                .data(dataset2);
+            var enterText = updateText.enter();
+            var exitText = updateText.exit();
+            updateRect.attr("fill", "#33B3ED")
+                .attr("x", function(d, i) {
+                    return xScale(i) + padding.left;
+                })
+                .attr("y", function(d, i) {
+                    return height2 - padding.bottom - yScale(d);
+                })
+                .attr("width", xScale.rangeBand())
+                .attr("height", function(d) {
+                    return yScale(d);
+                });
+            enterRect.append("rect")
+                .attr("fill", "#33B3ED")
+                .attr("x", function(d, i) {
+                    return xScale(i) + padding.left;
+                })
+                .attr("y", function(d, i) {
+                    return height2 - padding.bottom - yScale(d);
+                })
+                .attr("width", xScale.rangeBand())
+                .attr("height", function(d) {
+                    return yScale(d);
+                });
+            exitRect.remove();
+            updateText.attr("x", function(d, i) {
+                    return xScale(i) + padding.left;
+                })
+                .attr("y", function(d, i) {
+                    return height2 - padding.bottom - yScale(d);
+                })
+                .attr("transform", "translate(" + padding.left + "," + height2 - padding.bottom + ")")
+                .attr("dx", function() {
+                    return (xScale.rangeBand() - rectPadding) / 2;
+                })
+                .attr("dy", function(d) {
+                    return 20;
+                })
+                .text(function(d) {
+                    return d;
+                });
+            enterText.append("text")
+                .attr("x", function(d, i) {
+                    return xScale(i) + padding.left;
+                })
+                .attr("y", function(d, i) {
+                    return height2 - padding.bottom - yScale(d);
+                })
+                .attr("transform", "translate(" + padding.left + "," + height2 - padding.bottom + ")")
+                .attr("dx", function() {
+                    return (xScale.rangeBand() - rectPadding) / 2;
+                })
+                .attr("dy", function(d) {
+                    return 20;
+                })
+                .text(function(d) {
+                    return d;
+                });
+            exitText.remove();
+        }
+
+        function mysort() {
+            dataset2.sort(d3.ascending);
+            draw();
+            drawLine(svg2, dataset2, false, true);
+        }
+
+        var startSortBtn = document.getElementById('startSort');
+        startSort.addEventListener('click', mysort);
+    }
+
+
+    //节目单
+    </script>
+
+</html>
