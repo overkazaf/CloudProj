@@ -1,5 +1,5 @@
+<!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="utf-8">
     <title>12.3.3 元素组合</title>
@@ -20,7 +20,7 @@
     var width = 600; //SVG绘制区域的宽度
     var height = 600; //SVG绘制区域的高度
     var radius = Math.min(width, height) / 2;
-    var BAR_DATA_LIMIT = 15;
+    var BAR_DATA_LIMIT = 15; // 柱状图的数量
     var svg = d3.select(".pie") //选择<body>
         .append("svg") //在<body>中添加<svg>
         .attr("width", width) //设定<svg>的宽度属性
@@ -369,7 +369,7 @@
             //var newData = {};
             dataset2 = [];
             var cnt = 0;
-            originDataset2.forEach(function(data) {
+            !!originDataset2 && originDataset2.forEach(function(data) {
                 if (cnt >= BAR_DATA_LIMIT) return;
                 if (clickName == data.name) {
                     var attention = Number(data.attention) * 10000;
@@ -648,21 +648,25 @@
 						}*/
 
 	    function getXAxisText (index, descFlag) {
-	    	var data = [];
-	    	originDataset2.forEach(function (d, i) {
-	    		if (clickName == d.name) {
-	    			data.push(d);
-	    		}
-	    	});
-	    	console.log('data', data);
+	    	var data;
+	        return function () {
+                if (!data) {
+                    originDataset2.forEach(function (d, i) {
+                        if (clickName == d.name) {
+                            data.push(d);
+                        }
+                    });
+                    console.log('data', data);
 
-	    	if (descFlag) {
-	    		data = data.sort(d3.descending);
-	    	}
+                    if (descFlag) {
+                        data = data.sort(d3.descending);
+                    }
+                }
 
-	    	var date = data[index]['date'];
-	    	date = date.substring(0, date.lastIndexOf('/'))
-	    	return date;
+                var date = data[index]['date'];
+                    date = date.substring(0, date.lastIndexOf('/'))
+                return date;
+            }
 	    }
 
         function drawLine(svg, dataset, descFlag, sortXAxis) {
@@ -684,7 +688,7 @@
 
             var xAxis = d3.svg.axis()
                 .scale(xScale)
-                .tickFormat(function(d) {return getXAxisText(d, !!sortXAxis); })
+                .tickFormat(function(d) {return getXAxisText(d, !!sortXAxis)(); })
                 .orient("bottom");
 
             //定义纵轴
