@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <title>12.3.3 元素组合</title>
@@ -20,7 +21,7 @@
     var width = 600; //SVG绘制区域的宽度
     var height = 600; //SVG绘制区域的高度
     var radius = Math.min(width, height) / 2;
-    var BAR_DATA_LIMIT = 15; // 柱状图的数量
+    var BAR_DATA_LIMIT = 10; // 柱状图的数量
     var svg = d3.select(".pie") //选择<body>
         .append("svg") //在<body>中添加<svg>
         .attr("width", width) //设定<svg>的宽度属性
@@ -33,7 +34,6 @@
         //构造一条数据
         //endfor
         //return dataset
-
     }
 
 
@@ -75,7 +75,7 @@
     csv("cctv2.csv", function(error, csvdata) { //取csv数据
         originDataset2 = csvdata;
     });
-    //	console.log(originDataset2);
+    //  console.log(originDataset2);
 
     //2.转换数据
     var pie = d3.layout.pie()
@@ -86,7 +86,7 @@
 
     var piedata = pie(dataset);
     //var piedata =pie(getDataSet());
-    //console.log(piedata);	
+    //console.log(piedata); 
     //console.log(piedata.length);
     //3.绘制
 
@@ -123,7 +123,7 @@
     var arc1 = d3.svg.arc()
         .innerRadius(innerRadius + innerSpacing)
         .outerRadius(outerRadius);
-    //	var colorcolor = d3.scale.category20();
+    //  var colorcolor = d3.scale.category20();
     var color = ["#0068B7", "#FF8C00", "#FFF799", "#FF0000", "#F29C9F", "#00A0E9", "#FFEE00", "#00B7EE", "#82B6E8", "#F3B6A2", "#DBC492", "#C8E39C", "#566B9A", "#D9C290", "#0B915E", "#9F92EF", "#38B6B5", "#D3758F", "#F1D898", "#F16C78", "#2D4381", "#F1F29A", "#3CB271", "#CA8D84", "#E7DAC9", "#EC9577", "#33B5B4", "#D5B157", "#A092F1", "#09905C", "#3AB16F", "#39B270", "#FF6766", "#689AFE", "#E8F787", "#058E5B", "#B0A8F0"];
     redraw();
 
@@ -154,7 +154,7 @@
 
         //添加弧内文字
         //newArcs.append("text")
-        //		.attr("class","percent");
+        //      .attr("class","percent");
 
         //添加弧外文字
         newArcs.append("text")
@@ -193,10 +193,10 @@
     function setAttributes(arcs) { //设置弧的属性
 
         /*
-        	为每一段弧添加三个数据：
-        	circle - 饼状图所在的圆，其中包含cx、cy、r三个属性
-        	dx - x方向的相对偏移量，拖拽事件触发时使用
-        	dy - y方向的相对偏移量，拖拽事件触发时使用
+            为每一段弧添加三个数据：
+            circle - 饼状图所在的圆，其中包含cx、cy、r三个属性
+            dx - x方向的相对偏移量，拖拽事件触发时使用
+            dy - y方向的相对偏移量，拖拽事件触发时使用
         */
         arcs.each(function(d) {
             d.circle = piecircle;
@@ -211,7 +211,7 @@
         //绘制弧
         arcs.select(".arcPath")
             .attr("fill", function(d, i) {
-                //return color(d.data[0]);	//设定弧的颜色
+                //return color(d.data[0]);  //设定弧的颜色
                 // return d.data[3];
                 return color[i];
             })
@@ -244,7 +244,7 @@
         arcs.select(".conLine1")
             //.style("stroke","black")
             .attr("stroke", function(d, i) {
-                //return color(d.data[0]);	//设定弧的颜色
+                //return color(d.data[0]);  //设定弧的颜色
                 // return d.data[3];
                 return color[i];
             })
@@ -265,7 +265,7 @@
         arcs.select(".conLine2")
             //.style("stroke","black")
             .attr("stroke", function(d, i) {
-                //return color(d.data[0]);	//设定弧的颜色
+                //return color(d.data[0]);  //设定弧的颜色
                 // return d.data[3];
                 return color[i];
             })
@@ -320,12 +320,12 @@
 
         arcs.on("mouseover", function(d, i) {
                 /*nodes_img.on("mouseover",function(d,i){
-                		
-                		鼠标移入时，
-                		（1）通过 selection.html() 来更改提示框的文字
-                		（2）通过更改样式 left 和 top 来设定提示框的位置
-                		（3）设定提示框的透明度为1.0（完全不透明）
-                		*/
+                        
+                        鼠标移入时，
+                        （1）通过 selection.html() 来更改提示框的文字
+                        （2）通过更改样式 left 和 top 来设定提示框的位置
+                        （3）设定提示框的透明度为1.0（完全不透明）
+                        */
 
                 tooltip.html("《" + d.data[0] + "》" + "<br/>" + "<span style='color:orangered'>" + "收视率为" + ":" + d.data[2] + "<br />" + "节目时长为" + ":" + d.data[1] + "min")
                     .style("left", (d3.event.pageX) + "px")
@@ -374,7 +374,7 @@
                 if (clickName == data.name) {
                     var attention = Number(data.attention) * 10000;
                     attention = attention.toFixed(2);
-                    dataset2.push(attention);
+                    dataset2.push(Number(attention));
                     cnt++;
                 }
             });
@@ -520,9 +520,9 @@
     function getPixelLength(str, fontsize) {
         /*var curLen = 0;
         for(var i=0;i<str.length;i++){
-        	var code = str.charCodeAt(i);
-        	var pixelLen = code > 255 ? fontsize : fontsize/2;
-        	curLen += pixelLen;
+            var code = str.charCodeAt(i);
+            var pixelLen = code > 255 ? fontsize : fontsize/2;
+            curLen += pixelLen;
         }
         */
         return 15;
@@ -532,9 +532,9 @@
         return Math.sqrt(vec.x * vec.x + vec.y * vec.y);
     }
     /*
-		下面部分是点击饼图事件，计算某一节目的收视率
-		初始默认取第一个节目的收视情况
-	*/
+        下面部分是点击饼图事件，计算某一节目的收视率
+        初始默认取第一个节目的收视情况
+    */
     function histogram(clickName) {
         var width2 = 500;
         var height2 = 500;
@@ -608,12 +608,12 @@
         //定义横轴
         var xAxis = d3.svg.axis()
             .scale(xScale)
-			//.tickFormat(function(d) {return getXAxisText(d); })
+            //.tickFormat(function(d) {return getXAxisText(d); })
 
         .orient("bottom");
-        /*	var xAxis=d3.svg.axis()
-        	  .scale(xScale)
-        	  .orient("bottom");*/
+        /*  var xAxis=d3.svg.axis()
+              .scale(xScale)
+              .orient("bottom");*/
         //定义纵轴
         var yAixs = d3.svg.axis()
             .scale(yScale)
@@ -622,58 +622,83 @@
 
         //添加纵轴  
         /* var yBar=svg2.append("g")
-        	.attr("class", "axis")
-        	.attr("transform", "translate("+padding+",0)")
-        	.call(yAixs);
-        	*/
+            .attr("class", "axis")
+            .attr("transform", "translate("+padding+",0)")
+            .call(yAixs);
+            */
         //添加横坐标轴并通过编号获取对应的横轴标签
         /*var xBar=svg2.append("g")
-						.attr("class", "axis")
-						.attr("transform", "translate(0," + (height2 - padding) + ")")
-						.call(xAxis)
-						.selectAll("text")
-						.text(function(d){return xMarks[d];});
-						
-							//产生随机数据
-					  	function getData()
-						{
-						var dataNum=15;
-						dataset=[];
-						xMarks=[];
-						for(i=1;i<dataNum;i++)
-						{
-						dataset.push(Math.round(Math.random()*height2));
-						xMarks.push("标签"+i);
-						}
-						}*/
-
-	    function getXAxisText (index, descFlag) {
-	    	var data;
-	        return function () {
-                if (!data) {
-                    originDataset2.forEach(function (d, i) {
-                        if (clickName == d.name) {
-                            data.push(d);
+                        .attr("class", "axis")
+                        .attr("transform", "translate(0," + (height2 - padding) + ")")
+                        .call(xAxis)
+                        .selectAll("text")
+                        .text(function(d){return xMarks[d];});
+                        
+                            //产生随机数据
+                        function getData()
+                        {
+                        var dataNum=15;
+                        dataset=[];
+                        xMarks=[];
+                        for(i=1;i<dataNum;i++)
+                        {
+                        dataset.push(Math.round(Math.random()*height2));
+                        xMarks.push("标签"+i);
                         }
-                    });
-                    console.log('data', data);
+                        }*/
 
-                    if (descFlag) {
-                        data = data.sort(d3.descending);
+        /**
+         * [getXAxisText 获取X轴的文本， 这里取的是除去年份的日期]
+         * @param  {[type]} index    [对应的柱形索引]
+         * @param  {[type]} sortFlag [排序的标志位]
+         * @return {[type]}          [description]
+         */
+        function getXAxisText(index, sortFlag) {
+            var data = [];
+            data = originDataset2.filter(function(el, index) {
+                // 只取和点击名字一致的数据
+                return clickName == el.name;
+            }).filter(function(el, index) {
+                // 只取和BAR_DATA_LIMIT变量限制范围内的数据
+                return index < BAR_DATA_LIMIT;
+            });
+
+            if (sortFlag == 1 || sortFlag == -1) {
+                // 对数据进行排序处理
+                data = data.sort(function(a, b) {
+                    if (sortFlag == 1) {
+                        return +a.attention > +b.attention;
+                    } else {
+                        return +a.attention < +b.attention;
                     }
-                }
-
-                var date = data[index]['date'];
-                    date = date.substring(0, date.lastIndexOf('/'))
-                return date;
+                });
             }
-	    }
+            var date = index + 1; // 默认给序号（索引加1）
+            if (data[index]) {
+                // 如果存在数据， 取对应的数据中除去年份的日期
+                date = data[index]['date'];
+                date = date.substring(0, date.lastIndexOf('/'))
+            }
+            return date;
+        }
 
-        function drawLine(svg, dataset, descFlag, sortXAxis) {
-            if (!!descFlag) dataset = dataset.sort(d3.descending);
+        /**
+         * [drawLine 绘制线条，主要有比例尺的计算、坐标轴的绘制、折线的绘制以及连接小圆点的绘制]
+         * @param  {[type]} svg       [绘制的svg对象引用]
+         * @param  {[type]} dataset   [数据源]
+         * @param  {[type]} ascFlag   [升序标志位，-1是降序， 0不作处理， 1为升序]
+         * @return {[type]}           [description]
+         */
+        function drawLine(svg, dataset, ascFlag) {
+            // 先清空原来绘制的图形
             svg.selectAll("circle").remove();
             svg.selectAll("path").remove();
             svg.selectAll(".axis").remove();
+
+            if (ascFlag == -1 || ascFlag == 1) {
+                if (ascFlag == -1)  dataset = dataset.sort(d3.descending);
+                else dataset = dataset.sort(d3.ascending);
+            }
 
             // 重新计算比例尺
             var xScale = d3.scale.ordinal()
@@ -688,7 +713,9 @@
 
             var xAxis = d3.svg.axis()
                 .scale(xScale)
-                .tickFormat(function(d) {return getXAxisText(d, !!sortXAxis)(); })
+                .tickFormat(function(d) {
+                    return getXAxisText(d, ascFlag);
+                })
                 .orient("bottom");
 
             //定义纵轴
@@ -715,13 +742,15 @@
 
 
             //添加系列的小圆点
-            var tempDataset = !!descFlag ? dataset.sort(d3.descending) : dataset;
+            var tempDataset = !!ascFlag ? (ascFlag == 1 ? dataset.sort(d3.ascending) : dataset.sort(d3.descending)) : dataset;
             var fixedDataset = [];
             tempDataset.forEach(function(d, i) {
                 if (i == 0) fixedDataset.push(d);
                 else {
                     var last = tempDataset[i - 1]; // or fixedDataset[fixedDataset.length-1] ?
+                    // 当前一项比后一项的attention多10%的时候， 才绘制小圆点，否则让小圆点绘制在svg外， 即不显示
                     var pushFlag = Math.abs(d - last) > (last * 0.1);
+                    
                     if (pushFlag) {
                         fixedDataset.push(d)
                     } else {
@@ -744,18 +773,19 @@
                 .attr("fill", "#41DB00");
 
             //添加x轴
-	        svg.append("g")
-	            .attr("class", "axis")
-	            .attr("transform", "translate(" + padding.left + "," + (height2 - padding.bottom) + ")")
-	            .call(xAxis);
-	        //	 d3.selectAll('g.tick text').attr('transform','translate(30,20)rotate(30)')//文字倾斜	
-	        //添加y轴
-	        svg.append("g")
-	            .attr("class", "axis")
-	            .attr("transform", "translate(" + padding.left + "," + padding.top + ")")
-	            .call(yAixs);
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + padding.left + "," + (height2 - padding.bottom) + ")")
+                .call(xAxis);
+            //   d3.selectAll('g.tick text').attr('transform','translate(30,20)rotate(30)')//文字倾斜   
+            //添加y轴
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + padding.left + "," + padding.top + ")")
+                .call(yAixs);
         }
-        drawLine(svg2, dataset2)
+        // 绘制折线， 保持原排序
+        drawLine(svg2, dataset2, 0);
 
         yScale.range([height2 - padding.top - padding.bottom, 0]);
 
@@ -803,15 +833,14 @@
                 return height2 - padding.bottom - yScale(d);
             })
             .attr("dx", function() {
-                return (xScale.rangeBand() - rectPadding) / 2;
+                return (xScale.rangeBand() - rectPadding) / 2 - padding.left;
             })
             .attr("dy", function(d) {
-                return 15;
+                return -height + 175;
             })
             .text(function(d) {
                 return d;
             });
-
 
         function draw() {
             var updateRect = svg2.selectAll(".MyRect")
@@ -885,13 +914,17 @@
         function mysort() {
             dataset2.sort(d3.ascending);
             draw();
-            drawLine(svg2, dataset2, false, true);
+            drawLine(svg2, dataset2, 1);
+
+            // 下边是降序的参数
+            // dataset2.sort(d3.descending);
+            // draw();
+            // drawLine(svg2, dataset2, -1);
         }
 
         var startSortBtn = document.getElementById('startSort');
         startSort.addEventListener('click', mysort);
     }
-
 
     //节目单
     </script>
