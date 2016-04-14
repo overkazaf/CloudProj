@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>多坐标轴</title>
+    <script type="text/javascript" src="jquery.min.js"></script>
+    <script type="text/javascript" src="highstock.js"></script>
+    <script type="text/javascript" src="exporting.js"></script>
+    <style>
+        .report-table {
+            margin: 20px auto;
+            width: 400px;
+            border: 1px solid #cccccc;
+            font-size: 16px;
+        }
+
+        .report-table .table-title {
+            font-weight: bold;
+        }
+
+        .report-table tr td {
+            border: 1px solid #dddddd;
+            text-align: center;
+            padding: 10px 5px;
+        }
+
+        .report-table tr td.row-key {
+            font-weight: bold;
+            font-size: 20px;
+            width: 120px;
+        }
+
+        .report-table tr td.row-value {
+            text-align: left;
+            text-indent: 40px;
+        }
+    </style>
+</head>
+
+<body>
+    <script type="text/javascript">
+    $(function() {
+        var getval = 'test';
+        var arr1 = [];
+        var arr2 = [];
+        var arr3 = [];
+
+        /**
+         * [compileTemplate 编译模板，生成装饰后的html结构]
+         * @param  {[type]} info [提示的文本数组]
+         * @return {[type]}      [description]
+         */
+        function compileTemplate (info) {
+            // 参数合法性校验
+            if (!info || !info.length) return 'Data Not Found';
+
+            // 第一项是日期
+            var date = info[0];
+
+            var tableTpl = getTableTpl();
+            var tbodyTpl = '';
+
+            for (var i = 1; i <= 3; i++) {
+                var key = info[2*i-1];
+                var value = info[2*i];
+                var trTpl;
+
+                if (key && value) {
+                    // 当有数据的时候才去替换tr中的数据
+                    trTpl = getTrTpl();
+
+                    // 替换每一行的第一列和第二列数据
+                    trTpl = trTpl.replace('{{KEY}}', key);
+                    trTpl = trTpl.replace('{{VALUE}}', value);
+
+                    tbodyTpl += trTpl;
+                }
+            }
+
+            // 替换表格头信息
+            tableTpl = tableTpl.replace('{{DATE}}', date);
+            // 替换表格尾信息
+            tableTpl = tableTpl.replace('{{TBODY}}', tbodyTpl);
+
+
+            return tableTpl;
+        }
+
+        /**
+         * [getTableTpl 生成一个表格模板，因为字符串拼接写在循环里容易出错， 这里抽取出来]
+         * @return {[type]} [description]
+         */
+        function getTableTpl () {
+            var tpl = '<table class="report-table">\
+                        <thead>\
+                            <th colspan="2"><h3>{{DATE}}</h3></th>\
+                        </thead>\
+                        <tbody>\
+                            {{TBODY}}\
+                        </tbody>\
+                    </table>';
+            return tpl;
+        }
+
+        /**
+         * [getTrTpl 生成一个表格行的模板，因为字符串拼接写在循环里容易出错， 这里同样也把逻辑抽取出来]
+         * @return {[type]} [description]
+         */
+        function getTrTpl () {
+            return '<tr><td class="row-key">{{KEY}}</td><td class="row-value">{{VALUE}}</td></tr>';
+        }
+
+        $.ajax({
+            url: "datati1201.json",
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                for (var k in data[0]) {
+                    arr3.push(k);
+                }
+                for (var i = 0; i < data.length; i++) {
+                    arr1.push((data[i][arr3[0]]));
+                }
+                for (var j = 0; j < data.length; j++) {
+                    arr2.push(data[j][arr3[1]]);
+                }
+                Highcharts.setOptions({
+                    lang: {
+                        contextButtonTitle: '打印输出菜单',
+                        printChart: "打印图表",
+                        downloadJPEG: "下载JPEG 图片",
+                        downloadPDF: "下载PDF文档",
+                        downloadPNG: "下载PNG 图片",
+                        downloadSVG: "下载SVG 矢量图",
+                        exportButtonTitle: "导出图片"
+                    }
+                });
+                var HC = $('#Chart').highcharts({
+                    chart: {
+                        renderTo: 'container',
+                        type: 'spline',
+                        zoomType: 'x',
+                    },
+                    title: {
+                        text: getval + '设备24小时历史曲线',
+                        style: {
+                            fontSize: '30px'
+                        }
+                    },
+                    xAxis: {
+                        categories: arr1,
+                        min: 20,
+                        tickInterval: 8
+                    },
+                    scrollbar: {
+                        enabled: true
+                    },
+
+                    yAxis: [{ // 主Y轴
+                        labels: {
+                            formatter: function() {
+                                return this.value + '°C';
+                            },
+                            style: {
+                                color: '#89A54E',
+                                fontSize: '14px'
+                            }
+                        },
+                        title: {
+                            text: '温度',
+                            style: {
+                                color: '#89A54E',
+                                fontSize: '16px'
+                            }
+                        },
+                        min: 30,
+                        max: 70,
+                        opposite: false
+
+                    }, { // 次Y轴
+                        gridLineWidth: 0,
+                        title: {
+                            text: '压强',
+                            style: {
+                                color: '#4572A7',
+                                fontSize: '14px'
+                            }
+                        },
+                        opposite: false,
+                        labels: {
+                            formatter: function() {
+                                return this.value + ' mPa';
+                            },
+                            style: {
+                                color: '#4572A7',
+                                fontSize: '16px'
+                            }
+                        }
+
+                    }, { // 第三级Y轴
+                        gridLineWidth: 0,
+                        title: {
+                            text: '湿度',
+                            style: {
+                                color: '#AA4643',
+                                fontSize: '14px'
+                            }
+                        },
+                        opposite: false,
+                        labels: {
+                            formatter: function() {
+                                return this.value + ' mm';
+                            },
+                            style: {
+                                color: '#AA4643',
+                                fontSize: '16px'
+                            }
+                        }
+
+                    }],
+                    tooltip: {
+                        enabled: true,
+                        shared: true,
+                        positioner : function () {
+                            // 这里让tooltip溢出canvas，达到不显示的效果
+                            return {
+                                x:-100,
+                                y:-100
+                            }
+                        }
+                    },
+                    plotOptions: {
+                        series: {
+                            cursor: 'pointer',
+                            events: {
+                                mouseOver: function(event) {
+                                    // 找到命中的目标元素
+                                    var target = event.target;
+
+                                    // 复制tooltip里的结构
+                                    var clonedTooltip = target.chart.tooltip.label.element.cloneNode(true);
+
+                                    // 由于highcharts生成的tooltip节点是唯一的text节点，直接用jQuery找到这个dom
+                                    var $text = $(clonedTooltip).find('text');
+
+                                    // 以下是tooltip包裹的所有tspan， 即要显示的信息， 用console审查元素可以看出来
+                                    var $tspans = $text.find('tspan');
+                                    
+                                    // 过滤特殊符号以后的文本数组
+                                    var info = [];
+
+                                    $tspans.each(function (index, el){
+                                        if ((index-1)%3 != 0) {
+                                            info.push($(el).text());
+                                        }
+                                    });
+
+                                    // 生成table结构的html字符串
+                                    var template = compileTemplate(info);
+
+                                    // 更新dom
+                                    $('#reporting').html(template);
+                                }
+                            }
+                        }
+                    },
+
+                    legend: {
+                        layout: 'vertical',
+                        align: 'left',
+                        x: 1100,
+                        verticalAlign: 'top',
+                        y: 60,
+                        floating: true,
+                        backgroundColor: '#FFFFFF',
+                        itemStyle: {
+                            fontSize: '18px'
+                        }
+                    },
+                    credits: {
+                        enabled: false
+                    },
+                    exporting: {
+                        enabled: true
+
+                    },
+                    series: [{
+                        name: '温度',
+                        color: '#89A54E',
+                        type: 'spline',
+                        data: arr2,
+                        tooltip: {
+                            valueSuffix: ' °C'
+                        }
+                    }, {
+                        name: '压强',
+                        color: '#4476A7',
+                        type: 'column',
+                        yAxis: 1,
+                        data: arr2,
+                        tooltip: {
+                            valueSuffix: ' mPa'
+                        }
+
+                    }, {
+                        name: '湿度',
+                        type: 'spline',
+                        color: '#AA4643',
+                        yAxis: 2,
+                        data: arr2,
+                        marker: {
+                            enabled: false
+                        },
+                        dashStyle: 'shortdot',
+                        tooltip: {
+                            valueSuffix: ' mm'
+                        }
+                    }]
+                });
+            }
+        });
+    });
+    </script>
+    <div id="Chart" style="width: 1200px; height: 500px; margin: 0 auto"></div>
+    <div id="reporting" class="highcharts-container"></div>
+</body>
+
+</html>
