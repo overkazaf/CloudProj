@@ -1,0 +1,91 @@
+@charset utf-8;
+.clearfix::after{
+	display: table;
+	content:"";
+	height: 0;
+	clear: both;
+}
+
+div.wrapper {
+	width: 600px;
+	min-height: 600px;
+	margin: 10px auto;
+	padding: 5px;
+}
+
+header, footer {
+	height: 40px;
+	background: #eee;
+}
+header {
+	margin-bottom: 5px;
+}
+
+.main {
+	position: relative;
+	height: 630px;
+	margin-bottom: 5px;
+}
+
+.price-info h1{
+	font-weight: bold;
+	font-size: 28px;
+}
+
+.code-data h2 {
+	font-size: 48px;
+	color: #f00;
+}
+.code-data p {
+	position: absolute;
+	right: 10px;
+	top: 20px;
+}
+.code-data p span {
+	color: #f00;
+	margin-top: 10px;
+	display: block;
+}
+
+.data-info {
+	margin-bottom: 15px;
+}
+.data-info ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+
+.data-info ul li {
+	float:left;
+	width: 25%;
+	height: 60px;
+	padding: 5px;
+	font-size: 18px;
+	border: 1px solid #bbb;
+	box-sizing: border-box;
+	text-align: center;
+	cursor: pointer;
+}
+.data-info ul li i {
+	display: block;
+	margin-top: 5px;
+}
+
+.data-nav a {
+	display: inline-block;
+	padding: 8px;
+	width: 96px;
+	background: #eee;
+	color: #999;
+	text-align: center;
+	margin-left: 2px;
+	font-size: 16px;
+	line-height: 20px;
+	text-decoration: none;
+}
+
+.data-nav a.active {
+	color: #ffffff;
+	background: #09f;
+}

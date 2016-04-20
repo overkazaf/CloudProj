@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Live Charts</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+</head>
+
+<body>
+    <div class="wrapper">
+        <header></header>
+        <div class="main">
+            <section class="price-info">
+                <h1>{{TITLE}}</h1>
+                <div class="code-data">
+                    <h2>{{PRICE}}</h2>
+                    <p>
+                        <span>{{price}}</span>
+                        <span>{{percent}}</span>
+                    </p>
+                </div>
+            </section>
+            <section class="data-info">
+                <ul class="clearfix">
+                    <li>
+                        今开
+                        <i>{{value}}</i>
+                    </li>
+                    <li>
+                        昨收
+                        <i>{{value}}</i>
+                    </li>
+                    <li>
+                        最高
+                        <i>{{value}}</i>
+                    </li>
+                    <li>
+                        最低
+                        <i>{{value}}</i>
+                    </li>
+                </ul>
+            </section>
+            <section class="data-nav">
+                <a href="javascript:void(0)" data-interval="1" data-charttype="bar">分时</a>
+                <a href="javascript:void(0)" data-interval="5" data-charttype="k">5分</a>
+                <a href="javascript:void(0)" data-interval="30" data-charttype="k">30分</a>
+                <a href="javascript:void(0)" data-interval="1d" data-charttype="k">日K</a>
+                <a href="javascript:void(0)" data-interval="1w" data-charttype="k">周K</a>
+            </section>
+            <section class="data-container" id="chart" width="600" height="350" style="width: 600px;height:350px;border: 1px solid #ccc; margin-top: 5px;">
+            </section>
+        </div>
+        <footer></footer>
+    </div>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+    $(function() {
+        var APP = {
+            DEBUG: true,
+            DATA_INTERFACE: './data.json',
+            timeticket: null,
+            MAX_DATASET_LIMIT: 1000,
+            DATASET_CLEANED_COUNT: 200,
+            chartData: {
+                '1': {
+                    'current': 0,
+                    'cleaned': 0,
+                    'data': []
+                },
+                '5': {
+                    'current': 0,
+                    'cleaned': 0,
+                    'data': []
+                },
+                '30': {
+                    'current': 0,
+                    'cleaned': 0,
+                    'data': []
+                },
+                '1d': {
+                    'current': 0,
+                    'cleaned': 0,
+                    'data': []
+                },
+                '1w': {
+                    'current': 0,
+                    'cleaned': 0,
+                    'data': []
+                }
+            },
+            chart: echarts.init(document.getElementById('chart'))
+        };
+
+
+        function getDataSet(interval) {
+            return APP.chartData[interval];
+        }
+
+        function setOption(option) {
+            APP.chart.setOption(option);
+        }
+
+
+        function handleBarData (data) {
+            var ret = [];
+            for (var i = 0, l = data.length; i < l; i++) {
+                var item = data[i];
+                var newObj = {
+                    name : item['name'],
+                    value : [
+                        item['date'],
+                        item['now']
+                    ]
+                };
+
+                ret.push(newObj);
+            }
+            return ret;
+        }
+
+        var buildChartOption = {
+            'bar': function(data) {
+                data = handleBarData(data);
+                var option = {
+                    title: {
+                        text: '动态数据 + 时间坐标轴'
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            animation: false
+                        }
+                    },
+                    xAxis: {
+                        type: 'time',
+                        splitLine: {
+                            show: false
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        boundaryGap: [0, '100%'],
+                        splitLine: {
+                            show: false
+                        }
+                    },
+                    series: [{
+                        name: '模拟数据',
+                        type: 'line',
+                        showSymbol: false,
+                        hoverAnimation: false,
+                        data: data
+                    }]
+                };
+                return option;
+            },
+            'k': function(data) {
+
+            }
+        };
+
+        var renderChart = {
+            'bar': function(interval, data) {
+                var data = data || getDataSet(interval);
+                var option = buildChartOption['bar'](data);
+
+                setOption(option);
+            },
+            'k': function(interval) {
+
+            }
+        };
+
+
+
+        function mergeAndCleanOldData(interval, data) {
+            var target = getDataSet(interval);
+            var targetData = target['data'];
+
+            targetData = targetData.length === 0 ? clone(data) : targetData.concact(data);
+
+
+            if (!target.name) {
+                target.name = targetData[0]['name'];
+            }
+
+            if (targetData.length > APP.MAX_DATASET_LIMIT) {
+                targetData.splice(0, DATASET_CLEANED_COUNT);
+                target.cleaned++;
+            }
+
+
+            return targetData;
+        }
+
+
+        function log(k, v) {
+            if (APP.DEBUG) {
+                console.log(k, v);
+            }
+        }
+
+        function clone (obj) {
+            if (typeof obj !== 'object' || obj === null || obj == undefined) {
+                return obj;
+            }
+
+            var ret = new obj.constructor();
+
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    ret[key] = clone(obj[key]);
+                }
+            }
+
+            return ret;
+        }
+
+        function fnInterval2Seconds (interval) {
+            var ret = 1;
+
+            switch (interval) : 
+                case '1':
+                case '5':
+                case '30':
+                    ret = 60 * interval;
+                    break;
+                case '1d':
+                    ret = 24 * 60 * 60;
+                    break;
+                case '1w':
+                    ret = 24 * 60 * 60 * 7;
+                    break;
+
+
+            }
+            return ret;
+
+        }
+
+
+        function startTimeticket (fn, interval) {
+            clearInterval(APP.timeticket);
+            APP.timeticket = setInterval(fn, interval);
+        }
+
+
+        $('.data-nav').on('click', 'a', function(ev) {
+            ev.preventDefault();
+
+            var $target = $(ev.target);
+            var interval = $target.attr('data-interval');
+            var chartType = $target.attr('data-charttype');
+
+            log('interval', interval);
+            log('chartType', chartType);
+
+            $.getJSON(APP.DATA_INTERFACE, {
+                rows: 45,
+                interval: interval
+            }, function(data) {
+                var d = mergeAndCleanOldData(interval, data);
+                renderChart[chartType](interval, d);
+
+                startTimeticket(function () {
+
+                }, fnInterval2Seconds(interval));
+            });
+
+            $target.addClass('active').siblings().removeClass('active');
+        });
+    })
+    </script>
+</body>
+
+</html>

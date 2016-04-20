@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+</head>
+
+<body>
+    <div class="wrapper">
+        <header></header>
+        <div class="main">
+            <section class="price-info">
+                <h1>{{TITLE}}</h1>
+                <div class="code-data">
+                    <h2>{{PRICE}}</h2>
+                    <p>
+                        <span>{{price}}</span>
+                        <span>{{percent}}</span>
+                    </p>
+                </div>
+            </section>
+            <section class="data-info clearfix">
+                <ul>
+                    <li>
+                        {{desc}}
+                        <i>{{value}}</i>
+                    </li>
+                    <li>
+                        {{desc}}
+                        <i>{{value}}</i>
+                    </li>
+                    <li>
+                        {{desc}}
+                        <i>{{value}}</i>
+                    </li>
+                    <li>
+                        {{desc}}
+                        <i>{{value}}</i>
+                    </li>
+                </ul>
+            </section>
+            <section class="data-nav">
+                <a href="javascript:void(0)" data-interval="1">分时</a>
+                <a href="javascript:void(0)" data-interval="1">5分</a>
+                <a href="javascript:void(0)" data-interval="1">30分</a>
+                <a href="javascript:void(0)" data-interval="1">日K</a>
+                <a href="javascript:void(0)" data-interval="1">周K</a>
+            </section>
+            <section class="data-container" id="chart" width="600" height="350" style="width: 600px;height:350px;">
+            </section>
+        </div>
+        <footer></footer>
+    </div>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+    var FILE_PATH = './data.json';
+    $(function() {
+    	var APP = {};
+    	var myChart = echarts.init(document.getElementById('chart'));
+        $.getJSON(FILE_PATH, function(data) {
+            var rawData = splitData(data);
+            var option = composeChartOption(rawData, 'bar');
+            APP.count = 11;
+            renderChart(option, 'bar');
+            
+        });
+
+
+        function formatData(rawData) {
+            var targetData = [];
+            for (var i = rawData.length - 1; i >= 0; i--) {
+                var item = rawData[i];
+                var tmp = [];
+                tmp.push(item['date']);
+                tmp.push(item['kaipan']);
+                tmp.push(item['zuojie']);
+                tmp.push(item['zdj']);
+                tmp.push(item['zgj']);
+
+                targetData.push(tmp);
+            }
+
+            return targetData;
+        }
+
+
+        function splitData(rawData) {
+            var title = rawData[0]['name'];
+            rawData = formatData(rawData);
+            var categoryData = [];
+            var values = []
+
+            for (var i = 0, l = rawData.length; i < l; i++) {
+                categoryData.push(rawData[i].splice(0, 1)[0]);
+                values.push(rawData[i])
+            }
+
+            return {
+                title: title,
+                categoryData: categoryData,
+                values: values
+            };
+        }
+
+
+        var composeChartOptionByType = {
+            'k': function(data) {
+                var title = data.title;
+                var option = {
+                    title: {
+                        text: title,
+                        left: 'center'
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'line'
+                        }
+                    },
+                    grid: {
+                        left: '10%',
+                        right: '10%',
+                        bottom: '15%'
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: data.categoryData,
+                        scale: true,
+                        boundaryGap: false,
+                        axisLine: {
+                            onZero: false
+                        },
+                        splitLine: {
+                            show: false
+                        },
+                        splitNumber: 20,
+                        min: 'dataMin',
+                        max: 'dataMax'
+                    },
+                    yAxis: {
+                        scale: true,
+                        splitArea: {
+                            show: true
+                        }
+                    },
+                    dataZoom: [{
+                        type: 'inside',
+                        start: 50,
+                        end: 100
+                    }, {
+                        show: true,
+                        type: 'slider',
+                        y: '90%',
+                        start: 50,
+                        end: 100
+                    }],
+                    series: [{
+                        name: title,
+                        type: 'candlestick',
+                        data: data.values
+                    }]
+                };
+
+                return option;
+            },
+            'bar': function(data) {
+                var option = {
+                    title: {
+                        text: '动态数据',
+                        subtext: '纯属虚构'
+                    },
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        data: ['最新成交价', '预购队列']
+                    },
+                    toolbox: {
+                        show: true,
+                        feature: {
+                            dataView: {
+                                readOnly: false
+                            },
+                            restore: {},
+                            saveAsImage: {}
+                        }
+                    },
+                    dataZoom: {
+                        show: false,
+                        start: 0,
+                        end: 100
+                    },
+                    xAxis: [{
+                        type: 'category',
+                        boundaryGap: true,
+                        data: (function() {
+                            var now = new Date();
+                            var res = [];
+                            var len = 10;
+                            while (len--) {
+                                res.unshift(now.toLocaleTimeString().replace(/^\D*/, ''));
+                                now = new Date(now - 2000);
+                            }
+                            return res;
+                        })()
+                    }, {
+                        type: 'category',
+                        boundaryGap: true,
+                        data: (function() {
+                            var res = [];
+                            var len = 10;
+                            while (len--) {
+                                res.unshift(len + 1);
+                            }
+                            return res;
+                        })()
+                    }],
+                    yAxis: [{
+                        type: 'value',
+                        scale: true,
+                        name: '价格',
+                        max: 20,
+                        min: 0,
+                        boundaryGap: [0.2, 0.2]
+                    }, {
+                        type: 'value',
+                        scale: true,
+                        name: '预购量',
+                        max: 1200,
+                        min: 0,
+                        boundaryGap: [0.2, 0.2]
+                    }],
+                    series: [{
+                        name: '预购队列',
+                        type: 'bar',
+                        xAxisIndex: 1,
+                        yAxisIndex: 1,
+                        data: (function() {
+                            var res = [];
+                            var len = 10;
+                            while (len--) {
+                                res.push(Math.round(Math.random() * 1000));
+                            }
+                            return res;
+                        })()
+                    }, {
+                        name: '最新成交价',
+                        type: 'line',
+                        data: (function() {
+                            var res = [];
+                            var len = 0;
+                            while (len < 10) {
+                                res.push((Math.random() * 10 + 5).toFixed(1) - 0);
+                                len++;
+                            }
+                            return res;
+                        })()
+                    }]
+                };
+
+                return option;
+            }
+        };
+
+        var renderChartStrategies = {
+        	'bar' : function (option) {
+        		clearInterval(APP.timeTicket);
+        		myChart.setOption(option);
+        		APP.timeTicket = setInterval(function (){
+				    var axisData = (new Date()).toLocaleTimeString().replace(/^\D*/,'');
+
+				    var data0 = option.series[0].data;
+				    var data1 = option.series[1].data;
+				    data0.shift();
+				    data0.push(Math.round(Math.random() * 1000));
+				    data1.shift();
+				    data1.push((Math.random() * 10 + 5).toFixed(1) - 0);
+
+				    option.xAxis[0].data.shift();
+				    option.xAxis[0].data.push(axisData);
+				    option.xAxis[1].data.shift();
+				    option.xAxis[1].data.push(APP.count++);
+
+				    myChart.setOption(option);
+				}, 2100);
+        	}
+        };
+
+
+        function composeChartOption(data, chartType) {
+            return composeChartOptionByType[chartType](data);
+        }
+
+        function renderChart (option, chartType) {
+        	return renderChartStrategies[chartType](option);
+        }
+    })
+    </script>
+</body>
+
+</html>

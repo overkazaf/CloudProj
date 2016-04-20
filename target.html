@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Live Charts</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+</head>
+
+<body>
+    <div class="wrapper">
+        <header></header>
+        <div class="main">
+            <section class="price-info">
+                <h1>{{TITLE}}</h1>
+                <div class="code-data">
+                    <h2>{{PRICE}}</h2>
+                    <p>
+                        <span>{{price}}</span>
+                        <span>{{percent}}</span>
+                    </p>
+                </div>
+            </section>
+            <section class="data-info clearfix">
+                <ul>
+                    <li>
+                        {{desc}}
+                        <i>{{value}}</i>
+                    </li>
+                    <li>
+                        {{desc}}
+                        <i>{{value}}</i>
+                    </li>
+                    <li>
+                        {{desc}}
+                        <i>{{value}}</i>
+                    </li>
+                    <li>
+                        {{desc}}
+                        <i>{{value}}</i>
+                    </li>
+                </ul>
+            </section>
+            <section class="data-nav">
+                <a href="javascript:void(0)" data-interval="1" data-charttype="bar">分时</a>
+                <a href="javascript:void(0)" data-interval="5" data-charttype="bar">5分</a>
+                <a href="javascript:void(0)" data-interval="30" data-charttype="bar">30分</a>
+                <a href="javascript:void(0)" data-interval="1d" data-charttype="bar">日K</a>
+                <a href="javascript:void(0)" data-interval="1w" data-charttype="bar">周K</a>
+            </section>
+            <section class="data-container" id="chart" width="600" height="350" style="width: 600px;height:350px;">
+            </section>
+        </div>
+        <footer></footer>
+    </div>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+
+    $(function() {
+    	var APP = {
+            DEBUG : true,
+            timeticket : null,
+            MAX_DATASET_LIMIT : 1000,
+            DATASET_CLEANED_COUNT : 200,
+            chartData : {
+                '1' : {
+                    'current' : 0,
+                    'cleaned': 0,
+                    'data' : []
+                },
+                '5' : {
+                    'current' : 0,
+                    'cleaned': 0,
+                    'data' : []
+                },
+                '30' : {
+                    'current' : 0,
+                    'cleaned': 0,
+                    'data' : []
+                },
+                '1d' : {
+                    'current' : 0,
+                    'cleaned': 0,
+                    'data' : []
+                },
+                '1w' : {
+                    'current' : 0,
+                    'cleaned': 0,
+                    'data' : []
+                }
+            },
+            chart : echarts.init(document.getElementById('chart'))
+        };
+
+
+        var renderChart = {
+            'bar': function (data){
+
+            },
+            'k': function (data) {
+
+            }
+        };
+
+
+
+        function mergeAndCleanOldData (interval, data) {
+            var target = APP.chartData[interval];
+            var targetData = target['data'];
+            targetData.concact(data);
+
+            if (targetData.length > APP.MAX_DATASET_LIMIT) {
+                targetData.splice(0, DATASET_CLEANED_COUNT);
+                target.cleaned++;
+            }
+        }
+
+
+        function log (k, v) {
+            if (APP.DEBUG) {
+                console.log(k, v);
+            }
+        }
+
+
+
+        $('.data-nav').on('click', 'a', function (ev) {
+            ev.preventDefault();
+
+            var $target = $(ev.target);
+            var interval = $target.attr('data-interval');
+            var chartType = $target.attr('data-charttype');
+
+            log('interval', interval);
+            log('chartType', chartType);
+
+            // $.getJSON(INTERFACE, {
+            //     rows: 45,
+            //     interval: interval
+            // }, function (data) {
+            //     data = mergeAndCleanOldData(interval, data);
+            //     renderChart[chartType](data);
+            // });
+        });
+    })
+    </script>
+</body>
+
+</html>
