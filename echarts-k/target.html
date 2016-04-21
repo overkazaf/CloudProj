@@ -3,6 +3,11 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="renderer" content="webkit">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
     <title>Live Charts</title>
     <link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
@@ -14,10 +19,10 @@
             <div class="price-info">
                 <h1 id="currentName">{{TITLE}}</h1>
                 <div class="code-data">
-                    <h2 id="currentPrice">{{PRICE}}</h2>
+                    <h2 class="code" id="currentPrice">{{PRICE}}</h2>
                     <p>
-                        <span id="nest">{{price}}</span>
-                        <span id="percent">{{percent}}</span>
+                        <span class="code" id="nest">{{price}}</span>
+                        <span class="code" id="percent">{{percent}}</span>
                     </p>
                 </div>
             </div>
@@ -25,19 +30,19 @@
                 <ul class="clearfix">
                     <li>
                         今开
-                        <i id="kaipan">{{value}}</i>
+                        <b id="kaipan">{{kaipan}}</b>
                     </li>
                     <li>
                         昨收
-                        <i id="zuojie">{{value}}</i>
+                        <b id="zuojie">{{zuojie}}</b>
                     </li>
                     <li>
                         最高
-                        <i id="zgj">{{value}}</i>
+                        <b id="zgj">{{zgj}}</b>
                     </li>
                     <li>
                         最低
-                        <i id="zdj">{{value}}</i>
+                        <b id="zdj">{{zdj}}</b>
                     </li>
                 </ul>
             </div>
@@ -60,18 +65,19 @@
     <script type="text/javascript">
     $(function() {
         var APP = {
-            DEBUG: true,
+            DEBUG: true, // 是否开启调试模式
             //DATA_INTERFACE: 'http://kxt.tuojingtz.com/shuju/json_yuany2.php',
-            DATA_INTERFACE: 'http://localhost:5555',
-            timeticket: null,
-            MAX_DATASET_LIMIT: 1000,
-            DATASET_CLEANED_COUNT: 200,
-            INIT_DATA_CONUNT: 50,
+            DATA_INTERFACE: 'http://localhost:5555', // 这边由于接口跨域了， 我写了个nodejs代理转发请求，实际使用改为同域下的接口即可
+            timeticket: null, // 定时任务的timer
+            MAX_DATASET_LIMIT: 1000, // 限制单次取的最大数据集，暂不实现
+            DATASET_CLEANED_COUNT: 200, // 数据集达到或超出这个量时开始清理缓存数据，暂不实现
+            INIT_DATA_CONUNT: 50, // 初始化取的数据集
             chartData: {
+                // 按interval划分的缓存数据集
                 '1': {
-                    'current': 0,
-                    'cleaned': 0,
-                    'data': []
+                    'current': 0, // 当前的游标位置， 这个做性能优化时才会用到
+                    'cleaned': 0, // 当前的清理次数， 用于计算游标位移， 这个做性能优化时才会用到
+                    'data': [] // 缓存的数据集
                 },
                 '5': {
                     'current': 0,
@@ -95,29 +101,42 @@
                 }
             },
             option: {},
-            chart: echarts.init(document.getElementById('chart')),
+            chart: echarts.init(document.getElementById('chart')), // echarts的dom
             getDataSet: function(interval) {
+                // 取相应数据集
                 return APP.chartData[interval];
             },
             setDataSet: function(interval, data) {
+                // 设置相应数据集
                 APP.chartData[interval] = data;
             },
             saveOption: function(opt) {
+                // 保存更新后的图表配置项
                 APP.option = opt;
             },
             getOption: function() {
+                // 获取图表配置项
                 return APP.option;
             },
             setOption: function(option) {
+                // 设置图表配置项
                 APP.chart.setOption(option);
             }
         };
 
+
+        /**
+         * [preproccessChartData 图表数据的预处理策略，非必要步骤，但是因为第二次以后的数据更新没必要和初始化时一样取大量数据， 这边可以用来做增量式地更新]
+         * @type {Object}
+         */
         var preproccessChartData = {
             'bar': function(rawData, newData) {
                 var data = APP.getOption().series[0].data;;
-                var l = newData.length;
+                
 
+                var l = newData.length;
+                
+                // 其实下边可以根据需要增量更新的数据量来更新缓存数据集，但是因为数据接口在rows==1的时候有bug， 这个先这么用，后边处理问题不大
                 data.shift();
                 var item = newData[0];
                 var newObj = {
@@ -135,6 +154,10 @@
             }
         };
 
+        /**
+         * [handleData 根据不同的图表类型处理缓存数据集的策略]
+         * @type {Object}
+         */
         var handleData = {
             'bar': function(data) {
                 var ret = [];
@@ -165,15 +188,15 @@
                     var tmp = [];
                     if (item['now'] != 0 && item['zdj'] != 0 && item['zgj'] != 0) {
                         tmp.push(item['date']);
-                        tmp.push(item['zdj']);
-                        tmp.push(item['zgj']);
-                         tmp.push(item['kaipan']);
-                        tmp.push(item['zuojie']);
+                        tmp.push(+item['kaipan']);
+                        tmp.push(+item['zuojie']);
+                        tmp.push(+item['zdj']);
+                        tmp.push(+item['zgj']);
                         arr.push(tmp);
                     }
                 }
 
-                // test data
+                // k线图的测试数据
                 // arr = [
                 //     ['2013/1/24', 2320.26,2320.26,2287.3,2362.94],
                 //     ['2013/1/25', 2300,2291.3,2288.26,2308.38],
@@ -269,6 +292,10 @@
             }
         };
 
+        /**
+         * [buildChartOption 构建图表的配置项策略]
+         * @type {Object}
+         */
         var buildChartOption = {
             'bar': function(data, fn) {
                 var filteredData = !!fn ? fn.call(this, data) : handleData['bar'](data);
@@ -423,6 +450,11 @@
             }
         };
 
+        /**
+         * [splitData 分割源数据， 主要是用来分开处理k线图中日期与四个值]
+         * @param  {[type]} rawData [源数据集]
+         * @return {[type]}         [description]
+         */
         function splitData(rawData) {
             var categoryData = [];
             var values = []
@@ -438,34 +470,29 @@
 
 
         /**
-         * [renderChart 渲染图表的逻辑]
+         * [renderChart 渲染图表的主逻辑]
          * @type {Object}
          */
-        var renderChart = {
-            'bar': function(json) {
-                var interval = json['interval'];
-                var preFn = json['preproccessDataFn'];
-                var postFn = json['postproccessDataFn'];
-                var data = APP.getDataSet(interval);
-                var option = buildChartOption['bar'](data, preFn);
+        var renderChart = function (json) {
+            var interval = json['interval']; // 图表数据的更新频度
+            var preFn = json['preproccessDataFn']; // 预处理函数
+            var postFn = json['postproccessDataFn']; // 后处理函数
+            var chartType = json['chartType']; // 图表类型
+            var data = APP.getDataSet(interval);
+            var option = buildChartOption[chartType](data, preFn);
 
-                APP.setOption(option);
-                postFn.call(this, data);
-            },
-            'k': function(json) {
-                var interval = json['interval'];
-                var preFn = json['preproccessDataFn'];
-                var postFn = json['postproccessDataFn'];
-                var data = APP.getDataSet(interval);
-                var option = buildChartOption['k'](data, preFn);
-
-                APP.setOption(option);
-                postFn.call(this, data);
-            }
+            // 开始渲染图表
+            APP.setOption(option);
+            postFn.call(this, data);
         };
 
 
-
+        /**
+         * [resetOldDataset 重置旧数据集，本是出于性能考虑要做个缓存的方法，现暂不实现]
+         * @param  {[type]} interval [时间间隔，以此来分离开不同时间间隔的数据集]
+         * @param  {[type]} data     [新获取的数据集对象]
+         * @return {[type]}          [更新后的数据集]
+         */
         function resetOldDataset(interval, data) {
             var target = APP.getDataSet(interval);
             var targetData = target['data'];
@@ -475,6 +502,7 @@
 
 
             if (!target.name) {
+                // 为当前的数据集增加name值
                 target.name = targetData[0]['name'];
             }
 
@@ -486,50 +514,13 @@
         }
 
 
-        function log(k, v) {
-            if (APP.DEBUG) {
-                console.log(k, v);
-            }
-        }
 
-        function clone(obj) {
-            if (typeof obj !== 'object' || obj === null || obj == undefined) {
-                return obj;
-            }
-
-            var ret = new obj.constructor();
-
-            for (var key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    ret[key] = clone(obj[key]);
-                }
-            }
-
-            return ret;
-        }
-
-        function fnInterval2Seconds(interval) {
-            var ret = 1;
-
-            switch (interval) {
-                case '1':
-                case '5':
-                case '30':
-                    ret = 60 * interval;
-                    break;
-                case '1d':
-                    ret = 24 * 60 * 60;
-                    break;
-                case '1w':
-                    ret = 24 * 60 * 60 * 7;
-                    break;
-
-            }
-            return ret;
-
-        }
-
-
+        /**
+         * [startTimeticket 开始应用的时钟任务]
+         * @param  {Function} fn       [要执行的函数]
+         * @param  {[type]}   interval [时间间隔]
+         * @return {[type]}            [description]
+         */
         function startTimeticket(fn, interval) {
             clearInterval(APP.timeticket);
             APP.timeticket = setInterval(fn, interval);
@@ -551,16 +542,27 @@
             );
         }
 
-        function refreshPanel(last) {
+        /**
+         * [refreshCodePanel 刷新数据面板]
+         * @param  {[type]} last [最新的数据集元素]
+         * @return {[type]}      [description]
+         */
+        function refreshCodePanel(last) {
             var nest = new Number(last['now'] - last['zuojie']).toFixed(2);
             var percentage;
             percentage = new Number(nest / last['zuojie'] * 100).toFixed(2);
 
 
-            if (nest > 0) {
+            if (nest >= 0) {
                 nest = '+' + nest;
+                
+                // 移除指标下降时候的绿色
+                $('.code').removeClass('green');
             } else {
                 nest = nest;
+
+                // 指标下降时候的变为绿色文字
+                $('.code').addClass('green');
             }
 
             if (percentage > 0) {
@@ -581,6 +583,10 @@
             $('#chart').fadeIn('slow');
         }
 
+        /**
+         * [loading 切换图表类型的时候显示等待信息]
+         * @return {[type]} [description]
+         */
         function loading() {
             return $('<div id="loading">').css({
                 position: 'absolute',
@@ -594,7 +600,7 @@
         }
 
 
-        // 委托绑定tab的点击事件
+        // 委托绑定图表类型切换时tab选项卡的点击事件
         $('.data-nav').on('click', 'a', function(ev) {
             ev.preventDefault();
 
@@ -602,75 +608,103 @@
             if ($target.hasClass('active')) {
                 return;
             }
-
             var interval = $target.attr('data-interval');
             var chartType = $target.attr('data-charttype');
+            
             // 第一次取初始化的数据量
             // 以后根据interval来定时向后台发请求，更新当前的图表数据
+            
             $('#chart').hide();
             if (!$('#loading').length) {
                  $('<div id="loading">Loading...</div>').appendTo($('.main'));
             }
-           
+
+            
+            // 向数据接口取相应的数据集
             $.getJSON(APP.DATA_INTERFACE, {
                 rows: APP.INIT_DATA_CONUNT,
                 interval: interval
             }, function(data) {
-                // 根据interval类型来初始化图表
-                // step1. 合并数据集
-                resetOldDataset(interval, data);
                 $('#chart').fadeIn();
                 $('#loading').remove();
+
+                // 根据interval类型来初始化图表
+                
+                // step1. 合并数据集
+                resetOldDataset(interval, data);
+                
                 // step2. 绘制图表
-                renderChart[chartType]({
+                renderChart({
+                    chartType : chartType,
                     interval: interval,
                     postproccessDataFn: function(data) {
                         var last = data[0];
-                        refreshPanel(last);
+                        refreshCodePanel(last);
                     }
                 });
 
+                // step3. 启动定时器，间隙更新图表
                 startTimeticket(function() {
+                    
+                    // step4. 增量式地取数据，这里只取一条数据时候会有bug， 把getSingleChunkData的rows参数改成1试下
                     getSingleChunkData(interval, function(newData) {
-                        // 成功取回数据后
-                        renderChart[chartType]({
+                        
+                        // 成功取回数据后，同step2，绘制图表
+                        // 这里与第一次初始化不同的在于有个预处理， preproccessDataFn,
+                        // 里边处理的逻辑无非是将旧的数据剔除， 新的数据插入到数据集尾部， 保证数据量永远为APP.INIT_DATA_CONUNT定义的值
+                        renderChart({
+                            chartType : chartType,
                             interval: interval,
                             preproccessDataFn: function(data) {
                                 return preproccessChartData[chartType](data, newData);
                             },
                             postproccessDataFn: function(currentData) {
                                 var last = newData[0];
-                                refreshPanel(last);
+                                refreshCodePanel(last);
                             }
                         });
                     });
-                }, fnInterval2Seconds(interval) * 1100);
+                }, fnInterval2Seconds(interval) * 1005 /* 这里主要是考虑与startTicking错开， 由于setInterval的内部实现中权重会比setTimeout低，有一定的概率startTicking中的tick会把这个interval被挤掉，这边属于比较底层的细节了 */);
             });
 
-            // 更新tab状态
+            // 更新tab选项卡的选中状态
             $target.addClass('active').siblings().removeClass('active');
         });
 
 
-
-
-        initApp();
-
+        /**
+         * [initApp 应用程序初始化]
+         * @return {[type]} [description]
+         */
         function initApp() {
-            startTicking();
+            var tickFn = startTicking();
+            tickFn();
             $('.data-nav>a:first').trigger('click');
         }
 
+        initApp();
 
-        var tick = null;
-
+        /**
+         * [startTicking 启用秒表]
+         * @return {[type]} [description]
+         */
         function startTicking() {
-            tick = setInterval(function() {
-                $('#tick').text(new Date().Format('yyyy-MM-dd hh:mm:ss'));
-            }, 1000);
+            var tick = null;
+
+            return function () {
+                tick = setInterval(function() {
+                    $('#tick').text(new Date().Format('yyyy-MM-dd hh:mm:ss'));
+                }, 1000);
+            };
         }
 
 
+
+        // =============================  工具方法  ========================= //
+        /**
+         * [Format 扩展Date对象的原型，加入一个日期格式化的方法]
+         * @param {[type]} fmt [description]
+         */
         Date.prototype.Format = function(fmt) {
             var o = {
                 "M+": this.getMonth() + 1, //月份   
@@ -687,6 +721,65 @@
                 if (new RegExp("(" + k + ")").test(fmt))
                     fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
             return fmt;
+        }
+
+
+         /**
+         * [log 控制台打印功能]
+         * @param  {[type]} k [键]
+         * @param  {[type]} v [值]
+         * @return {[type]}   [description]
+         */
+        function log(k, v) {
+            if (APP.DEBUG) {
+                console.log(k, v);
+            }
+        }
+
+        /**
+         * [clone 对给定对象进行深拷贝]
+         * @param  {[type]} obj [给定的源对象]
+         * @return {[type]}     [拷贝后的新对象]
+         */
+        function clone(obj) {
+            if (typeof obj !== 'object' || obj === null || obj == undefined) {
+                return obj;
+            }
+
+            var ret = new obj.constructor();
+
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    ret[key] = clone(obj[key]);
+                }
+            }
+
+            return ret;
+        }
+
+        /**
+         * [fnInterval2Seconds 转化interval到秒数]
+         * @param  {[type]} interval [取值为1, 5, 30, 1d, 1w]
+         * @return {[type]}          [对应的秒数]
+         */
+        function fnInterval2Seconds(interval) {
+            var ret = 1;
+
+            switch (interval) {
+                case '1':
+                case '5':
+                case '30':
+                    ret = 60 * interval;
+                    break;
+                case '1d':
+                    ret = 24 * 60 * 60;
+                    break;
+                case '1w':
+                    ret = 24 * 60 * 60 * 7;
+                    break;
+
+            }
+            return ret;
         }
     })
     </script>

@@ -89,7 +89,7 @@ header {
     cursor: pointer;
 }
 
-.data-info ul li i {
+.data-info ul li b {
     display: block;
     margin-top: 5px;
 }
@@ -122,4 +122,12 @@ header {
 .tooltip-list {
 	margin:0;
 	list-style-type: none;
+}
+
+.code {
+	font-weight: bold;
+}
+
+.green {
+	color: #6bb34f !important;
 }
