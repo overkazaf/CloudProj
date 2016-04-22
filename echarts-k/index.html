@@ -3,7 +3,12 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Document</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="renderer" content="webkit">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <title>Live Charts</title>
     <link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 
@@ -12,112 +17,402 @@
         <header></header>
         <div class="main">
             <div class="price-info">
-                <h1>{{TITLE}}</h1>
+                <h1 id="currentName">{{TITLE}}</h1>
                 <div class="code-data">
-                    <h2>{{PRICE}}</h2>
+                    <h2 class="code" id="currentPrice">{{PRICE}}</h2>
                     <p>
-                        <span>{{price}}</span>
-                        <span>{{percent}}</span>
+                        <span class="code" id="nest">{{price}}</span>
+                        <span class="code" id="percent">{{percent}}</span>
                     </p>
                 </div>
             </div>
-            <div class="data-info clearfix">
-                <ul>
+            <div class="data-info">
+                <ul class="clearfix">
                     <li>
-                        {{desc}}
-                        <i>{{value}}</i>
+                        今开
+                        <b id="kaipan">{{kaipan}}</b>
                     </li>
                     <li>
-                        {{desc}}
-                        <i>{{value}}</i>
+                        昨收
+                        <b id="zuojie">{{zuojie}}</b>
                     </li>
                     <li>
-                        {{desc}}
-                        <i>{{value}}</i>
+                        最高
+                        <b id="zgj">{{zgj}}</b>
                     </li>
                     <li>
-                        {{desc}}
-                        <i>{{value}}</i>
+                        最低
+                        <b id="zdj">{{zdj}}</b>
                     </li>
                 </ul>
             </div>
             <div class="data-nav">
-                <a href="javascript:void(0)" data-interval="1">分时</a>
-                <a href="javascript:void(0)" data-interval="1">5分</a>
-                <a href="javascript:void(0)" data-interval="1">30分</a>
-                <a href="javascript:void(0)" data-interval="1">日K</a>
-                <a href="javascript:void(0)" data-interval="1">周K</a>
+                <a href="javascript:void(0)" data-interval="1" data-charttype="bar">分时</a>
+                <a href="javascript:void(0)" data-interval="5" data-charttype="k">5分</a>
+                <a href="javascript:void(0)" data-interval="30" data-charttype="k">30分</a>
+                <a href="javascript:void(0)" data-interval="1d" data-charttype="k">日K</a>
+                <a href="javascript:void(0)" data-interval="1w" data-charttype="k">周K</a>
             </div>
-            <div class="data-container" id="chart" width="600" height="350" style="width: 600px;height:350px;">
+            <div class="data-container" id="chart" width="600" height="550">
             </div>
         </div>
-        <footer></footer>
+        <footer>
+            <div id="tick"></div>
+        </footer>
     </div>
     <script src="node_modules/echarts/dist/echarts.min.js"></script>
     <script src="node_modules/jquery/dist/jquery.min.js"></script>
     <script type="text/javascript">
-    var FILE_PATH = './data.json';
     $(function() {
-    	var APP = {};
-    	var myChart = echarts.init(document.getElementById('chart'));
-        $.getJSON(FILE_PATH, function(data) {
-            var rawData = splitData(data);
-            var option = composeChartOption(rawData, 'bar');
-            APP.count = 11;
-            renderChart(option, 'bar');
-            
-        });
-
-
-        function formatData(rawData) {
-            var targetData = [];
-            for (var i = rawData.length - 1; i >= 0; i--) {
-                var item = rawData[i];
-                var tmp = [];
-                tmp.push(item['date']);
-                tmp.push(item['kaipan']);
-                tmp.push(item['zuojie']);
-                tmp.push(item['zdj']);
-                tmp.push(item['zgj']);
-
-                targetData.push(tmp);
+        var APP = {
+            DEBUG: true, // 是否开启调试模式
+            //DATA_INTERFACE: 'http://kxt.tuojingtz.com/shuju/json_yuany2.php',
+            DATA_INTERFACE: 'http://localhost:5555', // 这边由于接口跨域了， 我写了个nodejs代理转发请求，实际使用改为同域下的接口即可
+            timeticket: null, // 定时任务的timer
+            MAX_DATASET_LIMIT: 1000, // 限制单次取的最大数据集，暂不实现
+            DATASET_CLEANED_COUNT: 200, // 数据集达到或超出这个量时开始清理缓存数据，暂不实现
+            INIT_DATA_CONUNT: 50, // 初始化取的数据集
+            chartData: {
+                // 按interval划分的缓存数据集
+                '1': {
+                    'current': 0, // 当前的游标位置， 这个做性能优化时才会用到
+                    'cleaned': 0, // 当前的清理次数， 用于计算游标位移， 这个做性能优化时才会用到
+                    'data': [] // 缓存的数据集
+                },
+                '5': {
+                    'current': 0,
+                    'cleaned': 0,
+                    'data': []
+                },
+                '30': {
+                    'current': 0,
+                    'cleaned': 0,
+                    'data': []
+                },
+                '1d': {
+                    'current': 0,
+                    'cleaned': 0,
+                    'data': []
+                },
+                '1w': {
+                    'current': 0,
+                    'cleaned': 0,
+                    'data': []
+                }
+            },
+            option: {},
+            chart: echarts.init(document.getElementById('chart')), // echarts的dom
+            getDataSet: function(interval) {
+                // 取相应数据集
+                return APP.chartData[interval];
+            },
+            setDataSet: function(interval, data) {
+                // 设置相应数据集
+                APP.chartData[interval] = data;
+            },
+            saveOption: function(opt) {
+                // 保存更新后的图表配置项
+                APP.option = opt;
+            },
+            getOption: function() {
+                // 获取图表配置项
+                return APP.option;
+            },
+            setOption: function(option) {
+                // 设置图表配置项
+                APP.chart.setOption(option);
             }
-
-            return targetData;
-        }
+        };
 
 
-        function splitData(rawData) {
-            var title = rawData[0]['name'];
-            rawData = formatData(rawData);
-            var categoryData = [];
-            var values = []
+        /**
+         * [preproccessChartData 图表数据的预处理策略，非必要步骤，但是因为第二次以后的数据更新没必要和初始化时一样取大量数据， 这边可以用来做增量式地更新]
+         * @type {Object}
+         */
+        var preproccessChartData = {
+            'bar': function(rawData, newData) {
+                var data = APP.getOption().series[0].data;;
+                
 
-            for (var i = 0, l = rawData.length; i < l; i++) {
-                categoryData.push(rawData[i].splice(0, 1)[0]);
-                values.push(rawData[i])
+                var l = newData.length;
+                
+                // 其实下边可以根据需要增量更新的数据量来更新缓存数据集，但是因为数据接口在rows==1的时候有bug， 这个先这么用，后边处理问题不大
+                data.shift();
+                var item = newData[0];
+                var newObj = {
+                    name: item['name'],
+                    value: [
+                        item['date'],
+                        item['now'],
+                        item['zdj'],
+                        item['zgj']
+                    ]
+                };
+                data.push(newObj);
+
+                return data;
             }
+        };
 
-            return {
-                title: title,
-                categoryData: categoryData,
-                values: values
-            };
-        }
+        /**
+         * [handleData 根据不同的图表类型处理缓存数据集的策略]
+         * @type {Object}
+         */
+        var handleData = {
+            'bar': function(data) {
+                var ret = [];
+                for (var i = data.length - 1; i >= 0; i--) {
+                    var item = data[i];
+                    var values = [];
 
+                    values.push(item['date']);
+                    values.push(item['now']);
+                    values.push(item['zdj']);
+                    values.push(item['zgj']);
 
-        var composeChartOptionByType = {
+                    var newObj = {
+                        name: item['name'],
+                        value: values
+                    };
+
+                    if (values[1] != 0 && values[2] != 0 && values[3] != 0) {
+                        ret.push(newObj);
+                    }
+                }
+                return ret;
+            },
             'k': function(data) {
-                var title = data.title;
+                var arr = [];
+                for (var j = data.length - 1; j >= 0; j--) {
+                    var item = data[j];
+                    var tmp = [];
+                    if (item['now'] != 0 && item['zdj'] != 0 && item['zgj'] != 0) {
+                        tmp.push(item['date']);
+                        tmp.push(+item['kaipan']);
+                        tmp.push(+item['zuojie']);
+                        tmp.push(+item['zdj']);
+                        tmp.push(+item['zgj']);
+                        arr.push(tmp);
+                    }
+                }
+
+                // k线图的测试数据
+                // arr = [
+                //     ['2013/1/24', 2320.26,2320.26,2287.3,2362.94],
+                //     ['2013/1/25', 2300,2291.3,2288.26,2308.38],
+                //     ['2013/1/28', 2295.35,2346.5,2295.35,2346.92],
+                //     ['2013/1/29', 2347.22,2358.98,2337.35,2363.8],
+                //     ['2013/1/30', 2360.75,2382.48,2347.89,2383.76],
+                //     ['2013/1/31', 2383.43,2385.42,2371.23,2391.82],
+                //     ['2013/2/1', 2377.41,2419.02,2369.57,2421.15],
+                //     ['2013/2/4', 2425.92,2428.15,2417.58,2440.38],
+                //     ['2013/2/5', 2411,2433.13,2403.3,2437.42],
+                //     ['2013/2/6', 2432.68,2434.48,2427.7,2441.73],
+                //     ['2013/2/7', 2430.69,2418.53,2394.22,2433.89],
+                //     ['2013/2/8', 2416.62,2432.4,2414.4,2443.03],
+                //     ['2013/2/18', 2441.91,2421.56,2415.43,2444.8],
+                //     ['2013/2/19', 2420.26,2382.91,2373.53,2427.07],
+                //     ['2013/2/20', 2383.49,2397.18,2370.61,2397.94],
+                //     ['2013/2/21', 2378.82,2325.95,2309.17,2378.82],
+                //     ['2013/2/22', 2322.94,2314.16,2308.76,2330.88],
+                //     ['2013/2/25', 2320.62,2325.82,2315.01,2338.78],
+                //     ['2013/2/26', 2313.74,2293.34,2289.89,2340.71],
+                //     ['2013/2/27', 2297.77,2313.22,2292.03,2324.63],
+                //     ['2013/2/28', 2322.32,2365.59,2308.92,2366.16],
+                //     ['2013/3/1', 2364.54,2359.51,2330.86,2369.65],
+                //     ['2013/3/4', 2332.08,2273.4,2259.25,2333.54],
+                //     ['2013/3/5', 2274.81,2326.31,2270.1,2328.14],
+                //     ['2013/3/6', 2333.61,2347.18,2321.6,2351.44],
+                //     ['2013/3/7', 2340.44,2324.29,2304.27,2352.02],
+                //     ['2013/3/8', 2326.42,2318.61,2314.59,2333.67],
+                //     ['2013/3/11', 2314.68,2310.59,2296.58,2320.96],
+                //     ['2013/3/12', 2309.16,2286.6,2264.83,2333.29],
+                //     ['2013/3/13', 2282.17,2263.97,2253.25,2286.33],
+                //     ['2013/3/14', 2255.77,2270.28,2253.31,2276.22],
+                //     ['2013/3/15', 2269.31,2278.4,2250,2312.08],
+                //     ['2013/3/18', 2267.29,2240.02,2239.21,2276.05],
+                //     ['2013/3/19', 2244.26,2257.43,2232.02,2261.31],
+                //     ['2013/3/20', 2257.74,2317.37,2257.42,2317.86],
+                //     ['2013/3/21', 2318.21,2324.24,2311.6,2330.81],
+                //     ['2013/3/22', 2321.4,2328.28,2314.97,2332],
+                //     ['2013/3/25', 2334.74,2326.72,2319.91,2344.89],
+                //     ['2013/3/26', 2318.58,2297.67,2281.12,2319.99],
+                //     ['2013/3/27', 2299.38,2301.26,2289,2323.48],
+                //     ['2013/3/28', 2273.55,2236.3,2232.91,2273.55],
+                //     ['2013/3/29', 2238.49,2236.62,2228.81,2246.87],
+                //     ['2013/4/1', 2229.46,2234.4,2227.31,2243.95],
+                //     ['2013/4/2', 2234.9,2227.74,2220.44,2253.42],
+                //     ['2013/4/3', 2232.69,2225.29,2217.25,2241.34],
+                //     ['2013/4/8', 2196.24,2211.59,2180.67,2212.59],
+                //     ['2013/4/9', 2215.47,2225.77,2215.47,2234.73],
+                //     ['2013/4/10', 2224.93,2226.13,2212.56,2233.04],
+                //     ['2013/4/11', 2236.98,2219.55,2217.26,2242.48],
+                //     ['2013/4/12', 2218.09,2206.78,2204.44,2226.26],
+                //     ['2013/4/15', 2199.91,2181.94,2177.39,2204.99],
+                //     ['2013/4/16', 2169.63,2194.85,2165.78,2196.43],
+                //     ['2013/4/17', 2195.03,2193.8,2178.47,2197.51],
+                //     ['2013/4/18', 2181.82,2197.6,2175.44,2206.03],
+                //     ['2013/4/19', 2201.12,2244.64,2200.58,2250.11],
+                //     ['2013/4/22', 2236.4,2242.17,2232.26,2245.12],
+                //     ['2013/4/23', 2242.62,2184.54,2182.81,2242.62],
+                //     ['2013/4/24', 2187.35,2218.32,2184.11,2226.12],
+                //     ['2013/4/25', 2213.19,2199.31,2191.85,2224.63],
+                //     ['2013/4/26', 2203.89,2177.91,2173.86,2210.58],
+                //     ['2013/5/2', 2170.78,2174.12,2161.14,2179.65],
+                //     ['2013/5/3', 2179.05,2205.5,2179.05,2222.81],
+                //     ['2013/5/6', 2212.5,2231.17,2212.5,2236.07],
+                //     ['2013/5/7', 2227.86,2235.57,2219.44,2240.26],
+                //     ['2013/5/8', 2242.39,2246.3,2235.42,2255.21],
+                //     ['2013/5/9', 2246.96,2232.97,2221.38,2247.86],
+                //     ['2013/5/10', 2228.82,2246.83,2225.81,2247.67],
+                //     ['2013/5/13', 2247.68,2241.92,2231.36,2250.85],
+                //     ['2013/5/14', 2238.9,2217.01,2205.87,2239.93],
+                //     ['2013/5/15', 2217.09,2224.8,2213.58,2225.19],
+                //     ['2013/5/16', 2221.34,2251.81,2210.77,2252.87],
+                //     ['2013/5/17', 2249.81,2282.87,2248.41,2288.09],
+                //     ['2013/5/20', 2286.33,2299.99,2281.9,2309.39],
+                //     ['2013/5/21', 2297.11,2305.11,2290.12,2305.3],
+                //     ['2013/5/22', 2303.75,2302.4,2292.43,2314.18],
+                //     ['2013/5/23', 2293.81,2275.67,2274.1,2304.95],
+                //     ['2013/5/24', 2281.45,2288.53,2270.25,2292.59],
+                //     ['2013/5/27', 2286.66,2293.08,2283.94,2301.7],
+                //     ['2013/5/28', 2293.4,2321.32,2281.47,2322.1],
+                //     ['2013/5/29', 2323.54,2324.02,2321.17,2334.33],
+                //     ['2013/5/30', 2316.25,2317.75,2310.49,2325.72],
+                //     ['2013/5/31', 2320.74,2300.59,2299.37,2325.53],
+                //     ['2013/6/3', 2300.21,2299.25,2294.11,2313.43],
+                //     ['2013/6/4', 2297.1,2272.42,2264.76,2297.1],
+                //     ['2013/6/5', 2270.71,2270.93,2260.87,2276.86],
+                //     ['2013/6/6', 2264.43,2242.11,2240.07,2266.69],
+                //     ['2013/6/7', 2242.26,2210.9,2205.07,2250.63],
+                //     ['2013/6/13', 2190.1,2148.35,2126.22,2190.1]
+                // ];
+
+                return splitData(arr);
+            }
+        };
+
+        /**
+         * [buildChartOption 构建图表的配置项策略]
+         * @type {Object}
+         */
+        var buildChartOption = {
+            'bar': function(data, fn) {
+                var filteredData = !!fn ? fn.call(this, data) : handleData['bar'](data);
+
                 var option = {
                     title: {
-                        text: title,
+                        text: '动态数据 + 时间坐标轴'
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            animation: false
+                        },
+                        formatter: function(params, ticket, callback) {
+                            var value;
+                            var tpl = '';
+
+                            if (params.length && !!params[0].value) {
+                                value = params[0].value;
+                                tpl += '<div>' + value[0] + '</div>';
+                                tpl += '<div>实时数据</div>';
+                                tpl += '<div class="tooltip-list">';
+                                tpl += '<div><b>当前价：</b>' + value[1] + '</div>';
+                                tpl += '<div><b>最低价：</b>' + value[2] + '</div>';
+                                tpl += '<div><b>最高价：</b>' + value[3] + '</div>';
+                                tpl += '</div>';
+                            } else {
+                                tpl += params['name'];
+                                tpl += '  :  ';
+                                tpl += params['value'];
+                            }
+                            return tpl;
+                        }
+                    },
+                    xAxis: {
+                        type: 'time',
+                        splitLine: {
+                            show: false
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        boundaryGap: [0, '100%'],
+                        min: 'dataMin',
+                        max: 'dataMax',
+                        splitLine: {
+                            show: false
+                        }
+                    },
+                    series: [{
+                        name: '实时数据',
+                        type: 'line',
+                        showSymbol: true,
+                        markLine: {
+                            itemStyle: {
+                                normal : {
+                                    color: '#0099ff'
+                                }
+                            },
+                            lineStyle: {
+                                normal: {
+                                    width: 2,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)',
+                                    color: "#0099ff"
+                                }
+                            },
+                            areaStyle: {
+                                normal: {
+                                    color: 'rgba(0, 0, 255, 0.5)'
+                                }
+                            },
+                            data: [{
+                                name: '平均线',
+                                // 支持 'average', 'min', 'max'
+                                type: 'average'
+                            }]
+                        },
+                        areaStyle: {
+                            normal: {
+                                color: 'rgba(232, 232, 232, 0.1)'
+                            }
+                        },
+                        hoverAnimation: true,
+                        data: filteredData
+                    }]
+                };
+
+                APP.saveOption(option);
+                return option;
+            },
+            'k': function(data, fn) {
+                var filteredData = !!fn ? fn.call(this, data) : handleData['k'](data);
+                var option = {
+                    title: {
+                        text: '实时数据',
                         left: 'center'
                     },
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: {
                             type: 'line'
+                        },
+                        formatter: function(params, ticket, callback) {
+                            var date = params[0].name;
+
+                            var value = params[0].value;
+                            var tpl = '';
+
+                            tpl += '<div>' + date + '</div>';
+                            tpl += '<div>实时数据</div>';
+                            tpl += '<div class="tooltip-list">';
+                            tpl += '<div><b>开盘价：</b>' + value[0] + '</div>';
+                            tpl += '<div><b>收盘价：</b>' + value[1] + '</div>';
+                            tpl += '<div><b>最低价：</b>' + value[2] + '</div>';
+                            tpl += '<div><b>最高价：</b>' + value[3] + '</div>';
+                            tpl += '</div>';
+                            return tpl;
                         }
                     },
                     grid: {
@@ -127,7 +422,7 @@
                     },
                     xAxis: {
                         type: 'category',
-                        data: data.categoryData,
+                        data: filteredData.categoryData,
                         scale: true,
                         boundaryGap: false,
                         axisLine: {
@@ -146,156 +441,355 @@
                             show: true
                         }
                     },
-                    dataZoom: [{
-                        type: 'inside',
-                        start: 50,
-                        end: 100
-                    }, {
-                        show: true,
-                        type: 'slider',
-                        y: '90%',
-                        start: 50,
-                        end: 100
-                    }],
                     series: [{
-                        name: title,
+                        name: '实时数据',
                         type: 'candlestick',
-                        data: data.values
+                        markLine: {
+                            lineStyle: {
+                                normal: {
+                                    color: '#0099ff'
+                                }
+                            }
+                        },
+                        data: filteredData.values
                     }]
                 };
 
-                return option;
-            },
-            'bar': function(data) {
-                var option = {
-                    title: {
-                        text: '动态数据',
-                        subtext: '纯属虚构'
-                    },
-                    tooltip: {
-                        trigger: 'axis'
-                    },
-                    legend: {
-                        data: ['最新成交价', '预购队列']
-                    },
-                    toolbox: {
-                        show: true,
-                        feature: {
-                            dataView: {
-                                readOnly: false
-                            },
-                            restore: {},
-                            saveAsImage: {}
-                        }
-                    },
-                    dataZoom: {
-                        show: false,
-                        start: 0,
-                        end: 100
-                    },
-                    xAxis: [{
-                        type: 'category',
-                        boundaryGap: true,
-                        data: (function() {
-                            var now = new Date();
-                            var res = [];
-                            var len = 10;
-                            while (len--) {
-                                res.unshift(now.toLocaleTimeString().replace(/^\D*/, ''));
-                                now = new Date(now - 2000);
-                            }
-                            return res;
-                        })()
-                    }, {
-                        type: 'category',
-                        boundaryGap: true,
-                        data: (function() {
-                            var res = [];
-                            var len = 10;
-                            while (len--) {
-                                res.unshift(len + 1);
-                            }
-                            return res;
-                        })()
-                    }],
-                    yAxis: [{
-                        type: 'value',
-                        scale: true,
-                        name: '价格',
-                        max: 20,
-                        min: 0,
-                        boundaryGap: [0.2, 0.2]
-                    }, {
-                        type: 'value',
-                        scale: true,
-                        name: '预购量',
-                        max: 1200,
-                        min: 0,
-                        boundaryGap: [0.2, 0.2]
-                    }],
-                    series: [{
-                        name: '预购队列',
-                        type: 'bar',
-                        xAxisIndex: 1,
-                        yAxisIndex: 1,
-                        data: (function() {
-                            var res = [];
-                            var len = 10;
-                            while (len--) {
-                                res.push(Math.round(Math.random() * 1000));
-                            }
-                            return res;
-                        })()
-                    }, {
-                        name: '最新成交价',
-                        type: 'line',
-                        data: (function() {
-                            var res = [];
-                            var len = 0;
-                            while (len < 10) {
-                                res.push((Math.random() * 10 + 5).toFixed(1) - 0);
-                                len++;
-                            }
-                            return res;
-                        })()
-                    }]
-                };
-
+                //APP.saveOption(clone(option));
                 return option;
             }
         };
 
-        var renderChartStrategies = {
-        	'bar' : function (option) {
-        		clearInterval(APP.timeTicket);
-        		myChart.setOption(option);
-        		APP.timeTicket = setInterval(function (){
-				    var axisData = (new Date()).toLocaleTimeString().replace(/^\D*/,'');
+        /**
+         * [splitData 分割源数据， 主要是用来分开处理k线图中日期与四个值]
+         * @param  {[type]} rawData [源数据集]
+         * @return {[type]}         [description]
+         */
+        function splitData(rawData) {
+            var categoryData = [];
+            var values = []
+            for (var i = 0; i < rawData.length; i++) {
+                categoryData.push(rawData[i].splice(0, 1)[0]);
+                values.push(rawData[i])
+            }
+            return {
+                categoryData: categoryData,
+                values: values
+            };
+        }
 
-				    var data0 = option.series[0].data;
-				    var data1 = option.series[1].data;
-				    data0.shift();
-				    data0.push(Math.round(Math.random() * 1000));
-				    data1.shift();
-				    data1.push((Math.random() * 10 + 5).toFixed(1) - 0);
 
-				    option.xAxis[0].data.shift();
-				    option.xAxis[0].data.push(axisData);
-				    option.xAxis[1].data.shift();
-				    option.xAxis[1].data.push(APP.count++);
+        /**
+         * [renderChart 渲染图表的主逻辑]
+         * @type {Object}
+         */
+        var renderChart = function (json) {
+            var interval = json['interval']; // 图表数据的更新频度
+            var preFn = json['preproccessDataFn']; // 预处理函数
+            var postFn = json['postproccessDataFn']; // 后处理函数
+            var chartType = json['chartType']; // 图表类型
+            var data = APP.getDataSet(interval);
+            var option = buildChartOption[chartType](data, preFn);
 
-				    myChart.setOption(option);
-				}, 2100);
-        	}
+            // 开始渲染图表
+            APP.setOption(option);
+            postFn.call(this, data);
         };
 
 
-        function composeChartOption(data, chartType) {
-            return composeChartOptionByType[chartType](data);
+        /**
+         * [resetOldDataset 重置旧数据集，本是出于性能考虑要做个缓存的方法，现暂不实现]
+         * @param  {[type]} interval [时间间隔，以此来分离开不同时间间隔的数据集]
+         * @param  {[type]} data     [新获取的数据集对象]
+         * @return {[type]}          [更新后的数据集]
+         */
+        function resetOldDataset(interval, data) {
+            var target = APP.getDataSet(interval);
+            var targetData = target['data'];
+
+            targetData = clone(data);
+            APP.setDataSet(interval, targetData);
+
+
+            if (!target.name) {
+                // 为当前的数据集增加name值
+                target.name = targetData[0]['name'];
+            }
+
+            // if (targetData.length > APP.MAX_DATASET_LIMIT) {
+            //     targetData.splice(0, DATASET_CLEANED_COUNT);
+            //     target.cleaned++;
+            // }
+            return targetData;
         }
 
-        function renderChart (option, chartType) {
-        	return renderChartStrategies[chartType](option);
+
+
+        /**
+         * [startTimeticket 开始应用的时钟任务]
+         * @param  {Function} fn       [要执行的函数]
+         * @param  {[type]}   interval [时间间隔]
+         * @return {[type]}            [description]
+         */
+        function startTimeticket(fn, interval) {
+            clearInterval(APP.timeticket);
+            APP.timeticket = setInterval(fn, interval);
+        }
+
+
+        /**
+         * [getSingleChunkData 获取单份数据]
+         * @param  {[type]} interval [时间间隔]
+         * @return {[type]}          [description]
+         */
+        function getSingleChunkData(interval, cb) {
+            $.getJSON(
+                APP.DATA_INTERFACE, {
+                    rows: 2,
+                    interval: interval
+                },
+                cb
+            );
+        }
+
+        /**
+         * [refreshCodePanel 刷新数据面板]
+         * @param  {[type]} last [最新的数据集元素]
+         * @return {[type]}      [description]
+         */
+        function refreshCodePanel(last) {
+            var nest = new Number(last['now'] - last['zuojie']).toFixed(2);
+            var percentage;
+            percentage = new Number(nest / last['zuojie'] * 100).toFixed(2);
+
+
+            if (nest >= 0) {
+                nest = '+' + nest;
+                
+                // 移除指标下降时候的绿色
+                $('.code').removeClass('green');
+            } else {
+                nest = nest;
+
+                // 指标下降时候的变为绿色文字
+                $('.code').addClass('green');
+            }
+
+            if (percentage > 0) {
+                percentage = '+' + percentage + '%';
+            } else {
+                percentage = percentage + '%';
+            }
+
+            $('#currentName').text(last['name']);
+            $('#currentPrice').text(last['now']);
+            $('#nest').text(nest);
+            $('#percent').text(percentage);
+            $('#kaipan').text(last['kaipan']);
+            $('#zuojie').text(last['zuojie']);
+            $('#zgj').text(last['zgj']);
+            $('#zdj').text(last['zdj']);
+
+            $('#chart').fadeIn('slow');
+        }
+
+        /**
+         * [loading 切换图表类型的时候显示等待信息]
+         * @return {[type]} [description]
+         */
+        function loading() {
+            return $('<div id="loading">').css({
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                zIndex:1,
+                width: '100%',
+                height: '100%',
+                background: 'rgba(0, 0, 0, 0.5)',
+            });
+        }
+
+
+        // 委托绑定图表类型切换时tab选项卡的点击事件
+        $('.data-nav').on('click', 'a', function(ev) {
+            ev.preventDefault();
+
+            var $target = $(ev.target);
+            if ($target.hasClass('active')) {
+                return;
+            }
+            var interval = $target.attr('data-interval');
+            var chartType = $target.attr('data-charttype');
+            
+            // 第一次取初始化的数据量
+            // 以后根据interval来定时向后台发请求，更新当前的图表数据
+            
+            $('#chart').hide();
+            if (!$('#loading').length) {
+                 $('<div id="loading">Loading...</div>').appendTo($('.main'));
+            }
+
+            
+            // 向数据接口取相应的数据集
+            $.getJSON(APP.DATA_INTERFACE, {
+                rows: APP.INIT_DATA_CONUNT,
+                interval: interval
+            }, function(data) {
+                $('#chart').fadeIn();
+                $('#loading').remove();
+
+                // 根据interval类型来初始化图表
+                
+                // step1. 合并数据集
+                resetOldDataset(interval, data);
+                
+                // step2. 绘制图表
+                renderChart({
+                    chartType : chartType,
+                    interval: interval,
+                    postproccessDataFn: function(data) {
+                        var last = data[0];
+                        refreshCodePanel(last);
+                    }
+                });
+
+                // step3. 启动定时器，间隙更新图表
+                startTimeticket(function() {
+                    
+                    // step4. 增量式地取数据，这里只取一条数据时候会有bug， 把getSingleChunkData的rows参数改成1试下
+                    getSingleChunkData(interval, function(newData) {
+                        
+                        // 成功取回数据后，同step2，绘制图表
+                        // 这里与第一次初始化不同的在于有个预处理， preproccessDataFn,
+                        // 里边处理的逻辑无非是将旧的数据剔除， 新的数据插入到数据集尾部， 保证数据量永远为APP.INIT_DATA_CONUNT定义的值
+                        renderChart({
+                            chartType : chartType,
+                            interval: interval,
+                            preproccessDataFn: function(data) {
+                                return preproccessChartData[chartType](data, newData);
+                            },
+                            postproccessDataFn: function(currentData) {
+                                var last = newData[0];
+                                refreshCodePanel(last);
+                            }
+                        });
+                    });
+                }, fnInterval2Seconds(interval) * 1005 /* 这里主要是考虑与startTicking错开， 由于setInterval的内部实现中权重会比setTimeout低，有一定的概率startTicking中的tick会把这个interval被挤掉，这边属于比较底层的细节了 */);
+            });
+
+            // 更新tab选项卡的选中状态
+            $target.addClass('active').siblings().removeClass('active');
+        });
+
+
+        /**
+         * [initApp 应用程序初始化]
+         * @return {[type]} [description]
+         */
+        function initApp() {
+            var tickFn = startTicking();
+            tickFn();
+            $('.data-nav>a:first').trigger('click');
+        }
+
+        initApp();
+
+        /**
+         * [startTicking 启用秒表]
+         * @return {[type]} [description]
+         */
+        function startTicking() {
+            var tick = null;
+
+            return function () {
+                tick = setInterval(function() {
+                    $('#tick').text(new Date().Format('yyyy-MM-dd hh:mm:ss'));
+                }, 1000);
+            };
+        }
+
+
+
+        // =============================  工具方法  ========================= //
+        /**
+         * [Format 扩展Date对象的原型，加入一个日期格式化的方法]
+         * @param {[type]} fmt [description]
+         */
+        Date.prototype.Format = function(fmt) {
+            var o = {
+                "M+": this.getMonth() + 1, //月份   
+                "d+": this.getDate(), //日   
+                "h+": this.getHours(), //小时   
+                "m+": this.getMinutes(), //分   
+                "s+": this.getSeconds(), //秒   
+                "q+": Math.floor((this.getMonth() + 3) / 3), //季度   
+                "S": this.getMilliseconds() //毫秒   
+            };
+            if (/(y+)/.test(fmt))
+                fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+            for (var k in o)
+                if (new RegExp("(" + k + ")").test(fmt))
+                    fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+            return fmt;
+        }
+
+
+         /**
+         * [log 控制台打印功能]
+         * @param  {[type]} k [键]
+         * @param  {[type]} v [值]
+         * @return {[type]}   [description]
+         */
+        function log(k, v) {
+            if (APP.DEBUG) {
+                console.log(k, v);
+            }
+        }
+
+        /**
+         * [clone 对给定对象进行深拷贝]
+         * @param  {[type]} obj [给定的源对象]
+         * @return {[type]}     [拷贝后的新对象]
+         */
+        function clone(obj) {
+            if (typeof obj !== 'object' || obj === null || obj == undefined) {
+                return obj;
+            }
+
+            var ret = new obj.constructor();
+
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    ret[key] = clone(obj[key]);
+                }
+            }
+
+            return ret;
+        }
+
+        /**
+         * [fnInterval2Seconds 转化interval到秒数]
+         * @param  {[type]} interval [取值为1, 5, 30, 1d, 1w]
+         * @return {[type]}          [对应的秒数]
+         */
+        function fnInterval2Seconds(interval) {
+            var ret = 1;
+
+            switch (interval) {
+                case '1':
+                case '5':
+                case '30':
+                    ret = 60 * interval;
+                    break;
+                case '1d':
+                    ret = 24 * 60 * 60;
+                    break;
+                case '1w':
+                    ret = 24 * 60 * 60 * 7;
+                    break;
+
+            }
+            return ret;
         }
     })
     </script>

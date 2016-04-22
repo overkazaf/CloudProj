@@ -1,0 +1,89 @@
+@charset utf-8;
+
+.main {
+	margin: 10px auto;
+	width: 860px;
+	border: 1px solid #ccc;
+}
+
+.clearfix::after {
+	display: table;
+	content: " ";
+	height: 0;
+	visibility: hidden;
+	clear: both;
+}
+.fl {
+	float: left;
+}
+
+.nav {
+	width: 125px;
+}
+
+.charts {
+	width: 720px;
+}
+
+
+
+
+.deal-container {
+	position: relative;
+}
+.deal {
+    line-height: 24px;
+    text-align: center;
+    font-size: 24px;
+    color: #333;
+    font-family: "microsoft yahei";
+}
+.num {
+	margin-right: 20px;
+	color: #ee5e0f;
+}
+
+#tab-list {
+	margin: 0;
+	padding: 0;
+	list-style-type: none;
+}
+
+#tab-list .header-item {
+	font-weight: bold;
+	color: #ffffff;
+	background: #2f8bcd !important;
+}
+
+#tab-list .tab-list-item {
+	height: 32px;
+	cursor: pointer;
+	text-indent: 20px;
+	line-height: 32px;
+	background: #e4e7ea;
+}
+
+#tab-list .tab-list-item:hover {
+	color: #2f8bcd;
+	background:  #d5d5d5;
+}
+
+#tab-list .tab-list-item a {
+	color: #000000;
+	text-decoration: none;
+}
+
+#tab-list .tab-list-item:hover a {
+	color: #2f8bcd;
+}
+
+.tab-container-item {
+	width: 700px;
+	height: 310px;
+	padding: 10px;s
+	display: none;
+}
+
+.tab-container-item.active {
+	display: block;
+}
