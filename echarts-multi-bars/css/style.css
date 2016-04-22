@@ -26,8 +26,6 @@
 }
 
 
-
-
 .deal-container {
 	position: relative;
 }
@@ -51,11 +49,20 @@
 
 #tab-list .header-item {
 	font-weight: bold;
+	font-size: 16px;
 	color: #ffffff;
 	background: #2f8bcd !important;
 }
+#tab-list .header-item a {
+	color: #ffffff !important;
+}
+
+#tab-list .header-item:hover a{
+	color: #ffffff !important;
+}
 
 #tab-list .tab-list-item {
+	position: relative;
 	height: 32px;
 	cursor: pointer;
 	text-indent: 20px;
@@ -69,6 +76,7 @@
 }
 
 #tab-list .tab-list-item a {
+	font-size: 14px;
 	color: #000000;
 	text-decoration: none;
 }
@@ -77,10 +85,38 @@
 	color: #2f8bcd;
 }
 
+
+#tab-list .tab-list-item .arrow {
+	position: absolute;
+    top: 12px;
+    left: 10px;
+    width: 0;
+    height: 0;
+    font-size: 0;
+    line-height: 0;
+    border-color: transparent transparent transparent #f6f6f6;
+    border-style: dashed dashed dashed solid;
+    border-width: 5px;
+    display: none;
+}
+
+
+#tab-list .tab-list-item.header-item .arrow,
+#tab-list .tab-list-item.header-item:hover .arrow {
+	display: inline-block;
+	border-color: transparent transparent transparent #ffffff;
+}
+
+#tab-list .tab-list-item:hover .arrow {
+	display: inline-block;
+	border-color: transparent transparent transparent #2f8bcd;
+}
+
 .tab-container-item {
+	margin-top: 20px;
 	width: 700px;
 	height: 310px;
-	padding: 10px;s
+	padding: 10px;
 	display: none;
 }
 

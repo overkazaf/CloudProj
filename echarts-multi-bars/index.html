@@ -1,16 +1,21 @@
 <!DOCTYPE html>
 <html>
-
 <head>
+	<meta charset=utf-8>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge, Chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="renderer" content="webkit">
+    <meta name="author" content="overkazaf">
     <title>MultiCharts</title>
     <link rel="stylesheet" type="text/css" href="css/style.css">
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="highstock.js"></script>
 </head>
 
 <body>
     <div class="main clearfix">
         <nav class="nav fl">
             <ul id="tab-list">
-                <li class="tab-list-item header-item">网贷指数</li>
             </ul>
         </nav>
         <div class="charts fl">
@@ -18,12 +23,12 @@
                 <p class="deal">
                     成交：
                     <span class="num" id="turnover">
-						{{turnover}}
+						
 					</span> 利率：
                     <span class="num" id="exponent">
-						{{exponent}}
+						
 					</span>人气：<span class="num" id="outcount">
-						{{outcount}}
+						
 					</span>
                 </p>
             </div>
@@ -31,8 +36,6 @@
             </div>
         </div>
     </div>
-    <script src="node_modules/echarts/dist/echarts.min.js"></script>
-    <script src="node_modules/jquery/dist/jquery.min.js"></script>
     <script>
     $(function() {
         var APP = {
@@ -44,14 +47,16 @@
                 exponentChart10: 'exponent-chart-10.json'
             },
             DATA: {
-                exponent: {},
-                dangan: [],
-                exponentChart10: []
+                exponent: null,
+                dangan: null,
+                exponentChart10: null
             },
             DEALS: ['turnover', 'exponent', 'outcount'],
             TAB_ID: '#tab-list',
             TAB_CONTAINER_ID: '#tab-conatiner',
+            zeroData: null,
             PLAT_IDS: {
+                0: '网贷指数',
                 57: '人人贷',
                 52: '拍拍贷',
                 60: '红岭创投',
@@ -70,23 +75,26 @@
 
 
         function initApp() {
-            test();
+            initData();
             renderTab(initTabEvents);
+            $('.charts').hide();
 
             setTimeout(function() {
+                Highcharts.setOptions({
+			        global: {
+			            useUTC: false
+			        }
+			    });
                 renderDeal();
                 batchRenderCharts();
-            }, 0);
+            }, 200);
 
         };
 
-
-        initApp();
-
-        function batchRenderCharts () {
-        	for (var id in APP.PLAT_IDS) {
-        		renderChart(id, APP.PLAT_IDS[id]);
-        	}
+        function batchRenderCharts() {
+            for (var id in APP.PLAT_IDS) {
+                renderChart(id, APP.PLAT_IDS[id]);
+            }
         }
 
         function renderDeal() {
@@ -95,6 +103,8 @@
                 var id = deals[i];
                 $('#' + id).text(data[id])
             }
+
+            $('.charts').show();
         }
 
         function renderTab(callback) {
@@ -103,13 +113,14 @@
 
             for (var id in APP.PLAT_IDS) {
                 var name = APP.PLAT_IDS[id];
-                tpl += '<li class="tab-list-item"><a href="#">' + name + '</a></li>';
+                var fixedClass = id == 0 ? ' header-item' : '';
+                tpl += '<li data-id="' + id + '" class="tab-list-item'+ fixedClass +'"><span class="arrow"></span><a href="#">' + name + '</a></li>';
 
 
-                containerTpl += '<div id="' + id + '" class="tab-container-item">' + name + '</div>';
+                containerTpl += '<div id="chart_' + id + '" class="tab-container-item"></div>';
             }
 
-            $(APP.TAB_ID).append(tpl);
+            $(APP.TAB_ID).html(tpl);
             $(APP.TAB_CONTAINER_ID).html(containerTpl);
 
             callback && callback();
@@ -120,127 +131,268 @@
             $(APP.TAB_ID).on('mouseenter', 'li', function(ev) {
                 var $target = $(ev.target);
                 var index = $target.index();
-                log('index', index);
+                if (index > 0) {
+                	$('.deal-container').hide();
+                } else {
+                	$('.deal-container').show();
+                }
 
                 $containers.hide().eq(index).show();
-
             });
 
             $(APP.TAB_ID).find('li:first').trigger('mouseenter');
         }
 
 
-
-        function getMixedBarOptions(json) {
-            var option = {
-                tooltip: {
-                    trigger: 'axis'
+        function getCandlestick(series) {
+            return {
+                chart: {
+                    backgroundColor: 'rgba(255, 255, 255, 0)',
+                    width: 700,
+                    height: 360
                 },
-                toolbox: {
-                    feature: {
-                        dataView: {
-                            show: true,
-                            readOnly: false
-                        },
-                        magicType: {
-                            show: true,
-                            type: ['line', 'bar']
-                        },
-                        restore: {
-                            show: true
-                        },
-                        saveAsImage: {
-                            show: true
-                        }
-                    }
+                rangeSelector: {
+                    enabled: false, //暂时关闭
+                    inputEnabled: false //关闭日期区间的输入
                 },
-                legend: {
-                    data: ['蒸发量', '降水量', '平均温度']
+                credits: {
+                    enabled: false
+                },
+                scrollbar: {
+                    enabled: false
+                },
+                navigator: {
+                    enabled: false
+                },
+                title: {
+                    text: ''
                 },
                 xAxis: [{
-                    type: 'category',
-                    data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+                    type: 'date', //定义x轴上日期的显示格式
+                    gridLineColor: '#dcdcdc',
+                    labels: {
+                        formatter: function() {
+                            return Highcharts.dateFormat('%m/%d', this.value);
+                        },
+                        align: 'center'
+                    }
                 }],
                 yAxis: [{
-                    type: 'value',
-                    name: '水量',
-                    min: 0,
-                    max: 250,
-                    interval: 50,
-                    axisLabel: {
-                        formatter: '{value} ml'
-                    }
+                    title: {
+                        text: '利率（%）',
+                        style: {
+                            color: '#333333',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    gridLineColor: '#dcdcdc',
+                    height: 100,
+                    opposite: false
                 }, {
-                    type: 'value',
-                    name: '温度',
-                    min: 0,
-                    max: 25,
-                    interval: 5,
-                    axisLabel: {
-                        formatter: '{value} °C'
+                    title: {
+                        text: '成交量',
+                        style: {
+                            color: '#333333',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    gridLineColor: '#dcdcdc',
+                    top: 160,
+                    offset: 40,
+                    opposite: true,
+                    height: 130
+                }, {
+                    title: {
+                        text: '人气(人)',
+                        style: {
+                            color: '#333333',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    gridLineColor: '#dcdcdc',
+                    top: 160,
+                    height: 130,
+                    opposite: false,
+                    offset: 0
+                }],
+                tooltip: {
+                    xDateFormat: "%Y年%m月%d日"
+                },
+                series: series
+            }
+        }
+
+        function getCandlestick1(series) {
+            return {
+                chart: {
+                    backgroundColor: 'rgba(255, 255, 255, 0)',
+                    width: 700,
+                    height: 320
+                },
+                rangeSelector: {
+                    enabled: false, //暂时关闭
+                    inputEnabled: false //关闭日期区间的输入
+                },
+                credits: {
+                    enabled: false
+                },
+                scrollbar: {
+                    enabled: false
+                },
+                navigator: {
+                    enabled: false
+                },
+                title: {
+                    text: ''
+                },
+                xAxis: [{
+                    type: 'date', //定义x轴上日期的显示格式
+                    gridLineColor: '#dcdcdc',
+                    labels: {
+                        formatter: function() {
+                            return Highcharts.dateFormat('%m/%d', this.value);
+                        },
+                        align: 'center'
                     }
                 }],
-                series: [{
-                    name: '蒸发量',
-                    type: 'bar',
-                    data: [2.0, 4.9, 7.0, 23.2, 25.6, 76.7, 135.6, 162.2, 32.6, 20.0, 6.4, 3.3]
+                yAxis: [{
+                    title: {
+                        text: '利率指数',
+                        style: {
+                            color: '#333333',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    gridLineColor: '#dcdcdc',
+                    height: 100,
+                    opposite: false
                 }, {
-                    name: '降水量',
-                    type: 'bar',
-                    data: [2.6, 5.9, 9.0, 26.4, 28.7, 70.7, 175.6, 182.2, 48.7, 18.8, 6.0, 2.3]
+                    title: {
+                        text: '成交指数',
+                        style: {
+                            color: '#333333',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    gridLineColor: '#dcdcdc',
+                    top: 120,
+                    height: 130,
+                    offset: 20
                 }, {
-                    name: '平均温度',
-                    type: 'line',
-                    yAxisIndex: 1,
-                    data: [2.0, 2.2, 3.3, 4.5, 6.3, 10.2, 20.3, 23.4, 23.0, 16.5, 12.0, 6.2]
-                }]
-            };
-
-            return option;
+                    title: {
+                        text: '人气指数',
+                        style: {
+                            color: '#333333',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    gridLineColor: '#dcdcdc',
+                    top: 120,
+                    height: 130,
+                    opposite: false,
+                    offset: 0
+                }],
+                tooltip: {
+                    xDateFormat: "%Y年%m月%d日"
+                },
+                series: series
+            }
         }
 
         function getChartOption(id, json) {
-            var option = null;
-            switch (id) {
-                case 0:
-                    option = getMixedBarOptions();
-                    break;
-				default: 
-					option = getMixedBarOptions();
+            if (id == 0) {
+                return getCandlestick1(json);
+            } else {
+                return getCandlestick(json);
             }
-
-            return option;
         }
 
+        function paserStockData(data) {
+            var rate = [],
+                money = [],
+                outCount = [];
 
-        function paserStockData (data) {
-        	return data;
+            for (var i = 0; i < data.length; i++) {
+                rate.push([
+                    data[i][0], // the date
+                    data[i][1] // spline
+                ]);
+                money.push([
+                    data[i][0], // the date
+                    data[i][3] // the exponent
+                ]);
+                outCount.push([
+                    data[i][0], // the date
+                    data[i][2]
+                ])
+            }
+
+            var groupingUnits = [
+                ['week', [1]],
+                ['month', [1, 2, 3, 4, 5, 6]]
+            ];
+
+            var series = [{
+                name: '利率',
+                data: rate,
+                dataGrouping: {
+                    units: groupingUnits
+                },
+                color: '#0e7fb4'
+            }, {
+                type: 'column',
+                name: '成交量',
+                data: money,
+                yAxis: 1,
+                dataGrouping: {
+                    units: groupingUnits
+                },
+                color: "#0e7fb4"
+            }, {
+                type: 'spline',
+                name: '人气',
+                data: outCount,
+                yAxis: 2,
+                dataGrouping: {
+                    units: groupingUnits
+                },
+                color: "#e6bc8a"
+            }];
+            return series;
         }
 
         function renderChart(id, name) {
             var data = APP.DATA['exponentChart10'];
-            $.each(data, function(i, item) {
-            	log('item.platId', item.platId);
-                if (item.platId == id) {
-                    var json = paserStockData(item.data);
-                    if (!$("#" + id).attr('data-init')) {
-                    	var dom = document.getElementById(id);
-	                    var chartEl = echarts.init(document.getElementById('chart'));
-                        setTimeout(function (){
+            if (data) {
+                if (data.length > 1) {
+                    $.each(data, function(i, item) {
+                        if (item.platId == id) {
+                            var json = paserStockData(item.data);
+                            if (!$("#chart_" + id).attr('data-init')) {
+                                var option = getChartOption(id, json);
+                                var chartEl = $('#chart_' + id).highcharts('StockChart', option);
+                                APP.chartList.push(chartEl);
 
-	                        APP.chartList.push(chartEl);
-
-
-	                        var option = getChartOption(id, json);
-
-	                        chartEl.setOption(option);
-                        }, 500);
-
-                        $("#" + id).attr('data-init', true);
+                            }
+                            return;
+                        }
+                    });
+                } else {
+                    if (!APP.zeroData) {
+                        APP.zeroData = [];
+                        var tempData = data.day[0].data;
+                        for (var i = 0; i < tempData.length; i++) {
+                            zeroData[i] = [];
+                            zeroData[i][0] = tempData[i][0];
+                            for (var j = 1; j < tempData[i].length; j++) {
+                                APP.zeroData[i][j] = 0;
+                            }
+                        }
                     }
-                    return;
+                    var json = paserStockData(APP.zeroData);
+                    $("#chart_" + id).highcharts('StockChart', getChartOption(id, json));
                 }
-            });
+            }
         }
 
         function getFilePath(fileName) {
@@ -251,13 +403,10 @@
             return $.getJSON(getFilePath(fileName));
         }
 
-        // getJSON(APP.FILE_PATH['exponent']).then(function (data){
-        // 	log('result', data);
-        // });
-
-        function test() {
+        function initData() {
             for (var f in APP.FILE_PATH) {
                 + function(fileId) {
+                	if (!!APP.DATA[fileId]) return;
                     getJSON(APP.FILE_PATH[fileId]).then(function(data) {
                         APP.DATA[fileId] = data;
                     });
@@ -265,14 +414,15 @@
             }
         }
 
-
-
-
         function log(k, v) {
             if (APP.DEBUG) {
                 console.log(k, v);
             }
         }
+
+
+
+        initApp();
     });
     </script>
 </body>
