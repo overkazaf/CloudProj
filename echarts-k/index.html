@@ -2,19 +2,22 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset=utf-8>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge, Chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="renderer" content="webkit">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=yes">
-    <meta name="description" content="">
-    <meta name="keywords" content="">
+    <meta name="author" content="overkazaf">
     <title>Live Charts</title>
     <link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 
 <body>
     <div class="wrapper">
-        <header></header>
+        <header>
+            <span class="back">&lt;</span>
+
+            <div class="app-link">App下载</div>
+        </header>
         <div class="main">
             <div class="price-info">
                 <h1 id="currentName">{{TITLE}}</h1>
@@ -72,6 +75,7 @@
             MAX_DATASET_LIMIT: 1000, // 限制单次取的最大数据集，暂不实现
             DATASET_CLEANED_COUNT: 200, // 数据集达到或超出这个量时开始清理缓存数据，暂不实现
             INIT_DATA_CONUNT: 50, // 初始化取的数据集
+            LOADED: true,
             chartData: {
                 // 按interval划分的缓存数据集
                 '1': {
@@ -123,6 +127,27 @@
                 APP.chart.setOption(option);
             }
         };
+
+        function printArray (arr) {
+            var str = '[';
+            for (var i = 0, l = arr.length; i < l; i++) {
+                if (i) str += ','
+                var item = arr[i];
+                if (Object.prototype.toString.call(item) === '[object Array]') {
+                    str += printArray(item);
+                } else {
+                    if (isNaN(item)) {
+                        str += '\''+item + '\'';
+                    } else {
+                        str += item * 100;
+                    }
+                }
+
+            }
+            str += ']';
+
+            return str;
+        }
 
 
         /**
@@ -195,6 +220,10 @@
                         arr.push(tmp);
                     }
                 }
+
+                window.printArray = printArray;
+                console.log(printArray(arr))
+                //console.log(arr);
 
                 // k线图的测试数据
                 // arr = [
@@ -301,9 +330,6 @@
                 var filteredData = !!fn ? fn.call(this, data) : handleData['bar'](data);
 
                 var option = {
-                    title: {
-                        text: '动态数据 + 时间坐标轴'
-                    },
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: {
@@ -332,6 +358,7 @@
                     },
                     xAxis: {
                         type: 'time',
+                        splitNumber: 5,
                         splitLine: {
                             show: false
                         }
@@ -341,6 +368,7 @@
                         boundaryGap: [0, '100%'],
                         min: 'dataMin',
                         max: 'dataMax',
+                        splitNumber: 10,
                         splitLine: {
                             show: false
                         }
@@ -349,6 +377,11 @@
                         name: '实时数据',
                         type: 'line',
                         showSymbol: true,
+                        itemStyle :{
+                            normal : {
+                                color : 'rgb(39, 65, 94)'
+                            }
+                        },
                         markLine: {
                             itemStyle: {
                                 normal : {
@@ -357,14 +390,16 @@
                             },
                             lineStyle: {
                                 normal: {
-                                    width: 2,
+                                    width: 1,
                                     shadowColor: 'rgba(0, 0, 0, 0.5)',
-                                    color: "#0099ff"
+                                    color: "rgb(39, 65, 94)"
                                 }
                             },
+                            symbolSize : 5,
+                            
                             areaStyle: {
                                 normal: {
-                                    color: 'rgba(0, 0, 255, 0.5)'
+                                    color: 'rgba(192,192,192,0.0001)'
                                 }
                             },
                             data: [{
@@ -389,10 +424,6 @@
             'k': function(data, fn) {
                 var filteredData = !!fn ? fn.call(this, data) : handleData['k'](data);
                 var option = {
-                    title: {
-                        text: '实时数据',
-                        left: 'center'
-                    },
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: {
@@ -431,7 +462,7 @@
                         splitLine: {
                             show: false
                         },
-                        splitNumber: 20,
+                        splitNumber: 10,
                         min: 'dataMin',
                         max: 'dataMax'
                     },
@@ -439,7 +470,9 @@
                         scale: true,
                         splitArea: {
                             show: true
-                        }
+                        },
+                        splitNumber: 10,
+                        
                     },
                     series: [{
                         name: '实时数据',
@@ -449,6 +482,14 @@
                                 normal: {
                                     color: '#0099ff'
                                 }
+                            }
+                        },
+                        itemStyle :{
+                            normal : {
+                                color : 'rgb(254, 50, 50)',
+                                color0: 'rgb(255, 255, 255)',
+                                borderColor: 'rgb(254, 50, 50)',
+                                borderColor0: 'rgb(34, 121, 34)',
                             }
                         },
                         data: filteredData.values
@@ -533,6 +574,7 @@
          */
         function startTimeticket(fn, interval) {
             clearInterval(APP.timeticket);
+            APP.timeticket = null;
             APP.timeticket = setInterval(fn, interval);
         }
 
@@ -582,7 +624,7 @@
             }
 
             $('#currentName').text(last['name']);
-            $('#currentPrice').text(last['now']);
+            $('#currentPrice').text(new Number(last['now']).toFixed(2));
             $('#nest').text(nest);
             $('#percent').text(percentage);
             $('#kaipan').text(last['kaipan']);
@@ -618,6 +660,11 @@
             if ($target.hasClass('active')) {
                 return;
             }
+
+            if (!APP.LOADED){
+                return;
+            }
+
             var interval = $target.attr('data-interval');
             var chartType = $target.attr('data-charttype');
             
@@ -629,7 +676,7 @@
                  $('<div id="loading">Loading...</div>').appendTo($('.main'));
             }
 
-            
+            APP.LOADED = false;
             // 向数据接口取相应的数据集
             $.getJSON(APP.DATA_INTERFACE, {
                 rows: APP.INIT_DATA_CONUNT,
@@ -650,6 +697,7 @@
                     postproccessDataFn: function(data) {
                         var last = data[0];
                         refreshCodePanel(last);
+                        APP.LOADED = true;
                     }
                 });
 
