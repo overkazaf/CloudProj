@@ -485,12 +485,12 @@
                             }
                         },
                         itemStyle :{
-                            normal : {
-                                color : 'rgb(254, 50, 50)',
-                                color0: 'rgb(255, 255, 255)',
-                                borderColor: 'rgb(254, 50, 50)',
-                                borderColor0: 'rgb(34, 121, 34)',
-                            }
+                            // normal : {
+                            //     color : 'rgb(254, 50, 50)',
+                            //     color0: 'rgb(255, 255, 255)',
+                            //     borderColor: 'rgb(254, 50, 50)',
+                            //     borderColor0: 'rgb(34, 121, 34)',
+                            // }
                         },
                         data: filteredData.values
                     }]
@@ -575,6 +575,12 @@
         function startTimeticket(fn, interval) {
             clearInterval(APP.timeticket);
             APP.timeticket = null;
+
+            var dt = new Date();
+            if (dt.getDay() == 0 || dt.getDay() == 6) {
+                // 周末不更新数据
+                return ;
+            }
             APP.timeticket = setInterval(fn, interval);
         }
 
@@ -627,10 +633,10 @@
             $('#currentPrice').text(new Number(last['now']).toFixed(2));
             $('#nest').text(nest);
             $('#percent').text(percentage);
-            $('#kaipan').text(last['kaipan']);
-            $('#zuojie').text(last['zuojie']);
-            $('#zgj').text(last['zgj']);
-            $('#zdj').text(last['zdj']);
+            $('#kaipan').text(new Number(last['kaipan']).toFixed(2));
+            $('#zuojie').text(new Number(last['zuojie']).toFixed(2));
+            $('#zgj').text(new Number(last['zgj']).toFixed(2));
+            $('#zdj').text(new Number(last['zdj']).toFixed(2));
 
             $('#chart').fadeIn('slow');
         }

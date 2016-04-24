@@ -76,14 +76,18 @@ header {
 .price-info h1 {
 	margin: 5px;
     font-weight: bold;
-    font-size: 28px;
+    font-size: 2em;
+    height: 40px;
+    line-height: 40px;
 }
 
 .code-data h2 {
     margin: 0 0 0 10px;
-    font-size: 72px;
+    font-size: 5em;
     font-weight: bold;
     color: #f00;
+    height: 88px;
+    line-height: 88px;
 }
 
 .code-data p {
@@ -159,7 +163,7 @@ header {
 .data-container {
     position: relative;
     width: 590px;
-    height: 390px;
+    height: 370px;
     margin-top: 10px;
 }
 
