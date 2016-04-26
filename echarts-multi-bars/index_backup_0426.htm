@@ -1,0 +1,528 @@
+<!--{template common/header}-->
+<style id="diy_style" type="text/css"></style>
+<script src="template/turing_dz206/style/js/jquery.js"></script>
+
+<!-- Client JavaScript --> 
+<script src="template/turing_dz206/style/js/jquery.reslider.js"></script>
+
+<script type="text/javascript">  jq = jQuery.noConflict(); jq(function(){}); </script>
+
+
+
+
+
+
+ <script src="template/turing_dz206/style/js/echarts.common.min.js"></script>
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="wp">
+
+
+	<!--[diy=diy1]--><div id="diy1" class="area"></div><!--[/diy]-->
+    
+
+
+<div class="main">
+	<div class="bannerbox">
+        <!--[diy=tr040]--><div id="tr040" class="area"></div><!--[/diy]-->
+	</div>
+	
+    <div class="news_hot overflowH">
+    	
+        <div class="hot_left">
+        	
+            <div class="pic_ch">
+            	
+            <!--[diy=tr001]--><div id="tr001" class="area"></div><!--[/diy]-->
+            </div>
+            
+            <script>
+			
+			jq(".contral span").mouseenter(
+				function(){
+					jq(this).addClass("spanbg").siblings().removeClass("spanbg");
+					jq(".pic_imgbox a").eq(jq(this).index()).show().siblings().hide();
+					}
+			)
+			
+			</script>
+            
+            <div class="wangdai_news">
+            	<div class="wd_title">
+                	
+                	<a href="#">网贷新闻</a>
+                    
+                    <div class="wd_zui">
+                    	<a href="#" class="zuibg">最新</a>
+                    	<a href="#">最热</a>
+                    </div>
+                    
+                    <div class="wd_more">
+                    	<a href="#">更多</a>
+                    
+                    </div>
+                </div> 
+                
+                <div class="nl_box">
+                    <div class="news_list">
+                          <!--[diy=tr011]--><div id="tr011" class="area"></div><!--[/diy]-->
+                    </div>
+                
+                    <div class="news_list">
+                          <!--[diy=tr012]--><div id="tr012" class="area"></div><!--[/diy]-->   
+                    </div>
+                </div>
+            </div>
+			<script>
+			jq(".news_list").eq(1).hide();
+			jq(".wd_zui a").mouseenter(
+				function(){
+					jq(this).addClass("zuibg").siblings().removeClass("zuibg");
+					jq(".news_list").eq(jq(this).index()).show().siblings().hide();
+					}
+			)
+			</script>
+            
+        </div>
+        
+        <div class="hot_middle">
+        
+        	<div class="com_tip">
+            	<div class="tip_title">
+                	
+                	<a href="#">社区头条</a>
+                   
+                    <div class="tip_more">
+                    	<a href="#">更多</a>
+                    
+                    </div>
+                </div> 
+               
+                  <!--[diy=tr002]--><div id="tr002" class="area"></div><!--[/diy]-->
+                 <div class="news_list" style="width:450px;">
+                    <!--[diy=tr0110]--><div id="tr0110" class="area"></div><!--[/diy]-->
+                 </div>
+            </div>
+            
+            
+        </div>
+        
+        <div class="hot_right">
+        	<div class="th_tool">
+            	<div class="tool_title">
+                <a href="#">投行工具</a>
+                </div>
+                  <!--[diy=tr010]--><div id="tr010" class="area"></div><!--[/diy]-->
+            </div>
+            
+            <div class="exp_hot">
+            	<div class="exp_title">
+                	<a href="#">曝光热点</a>
+                </div>
+                <!--[diy=tr014]--><div id="tr014" class="area"></div><!--[/diy]-->
+            </div>
+        </div>
+    </div>
+    
+    <div class="bannerbox">
+      <!--[diy=tr041]--><div id="tr041" class="area"></div><!--[/diy]-->
+
+	</div>
+    
+    <div class="wd_num overflowH">
+    	<div class="num_title overflowH">
+        	<a href="#"><h2>网贷数据</h2></a>
+            <div class="num_more">
+            	<a href="#">更多>></a>
+            </div>
+        </div>
+    	<div class="num_left">
+        	
+            <div id="main" style="width: 825px;height:545px; float:left;">
+ 
+<script type="text/javascript">
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('main'));
+
+option = {
+    tooltip : {
+        trigger: 'axis',
+        axisPointer : {            // 坐标轴指示器，坐标轴触发有效
+            type : 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+        }
+    },
+    legend: {
+        data:['直接访问','邮件营销','联盟广告','视频广告','搜索引擎','百度','谷歌','必应','其他']
+    },
+    grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+    },
+    xAxis : [
+        {
+            type : 'category',
+            data : ['周一','周二','周三','周四','周五','周六','周日']
+        }
+    ],
+    yAxis : [
+        {
+            type : 'value'
+        }
+    ],
+    series : [
+        {
+            name:'直接访问',
+            type:'bar',
+            data:[320, 332, 301, 334, 390, 330, 320]
+        },
+        {
+            name:'邮件营销',
+            type:'bar',
+            stack: '广告',
+            data:[120, 132, 101, 134, 90, 230, 210]
+        },
+        {
+            name:'联盟广告',
+            type:'bar',
+            stack: '广告',
+            data:[220, 182, 191, 234, 290, 330, 310]
+        },
+        {
+            name:'视频广告',
+            type:'bar',
+            stack: '广告',
+            data:[150, 232, 201, 154, 190, 330, 410]
+        },
+        {
+            name:'搜索引擎',
+            type:'bar',
+            data:[862, 1018, 964, 1026, 1679, 1600, 1570],
+            markLine : {
+                lineStyle: {
+                    normal: {
+                        type: 'dashed'
+                    }
+                },
+                data : [
+                    [{type : 'min'}, {type : 'max'}]
+                ]
+            }
+        },
+        {
+            name:'百度',
+            type:'bar',
+            barWidth : 5,
+            stack: '搜索引擎',
+            data:[620, 732, 701, 734, 1090, 1130, 1120]
+        },
+        {
+            name:'谷歌',
+            type:'bar',
+            stack: '搜索引擎',
+            data:[120, 132, 101, 134, 290, 230, 220]
+        },
+        {
+            name:'必应',
+            type:'bar',
+            stack: '搜索引擎',
+            data:[60, 72, 71, 74, 190, 130, 110]
+        },
+        {
+            name:'其他',
+            type:'bar',
+            stack: '搜索引擎',
+            data:[62, 82, 91, 84, 109, 110, 120]
+        }
+    ]
+};
+
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+
+
+    </script>
+           
+        </div>
+   
+        <div class="num_right">
+        	<div class="ping_title overflowH">
+            	<a href="#"><h2>平台活动</h2></a>
+                <div class="ping_more">
+                    <a href="#">更多>></a>
+                </div>
+            </div>
+            <!--[diy=tr015]--><div id="tr015" class="area"></div><!--[/diy]-->
+        </div>
+    </div>
+    <div style="clear:both;"></div>
+    <div class="hot_p2p overflowH">
+    	<h1>热门P2P平台</h1>
+    	<!--[diy=tr016]--><div id="tr016" class="area"></div><!--[/diy]-->
+    </div>
+    
+    <div class="new_biao clearbox">
+		<div class="biao_title overflowH">
+        	<a href="#"><h2>平台新标</h2></a>
+            <div class="biao_more">
+            	<a href="#">更多>></a>
+            </div>
+        </div>
+    	<div class="nb_box overflowH">
+        	<!--[diy=tr017]--><div id="tr017" class="area"></div><!--[/diy]-->
+        </div>
+    </div>
+    
+   <!--[diy=tr044]--><div id="tr044" class="area"></div><!--[/diy]-->
+    
+    <div class="bigbox1 overflowH clearbox">
+    	<div class="big_left">
+        	<div class="big_column big_mar">
+            	<div class="big_title overflowH">
+                	<a href="#"><h2>平台曝光</h2></a>
+                    <div class="big_more">
+                        <a href="#">更多<img src="template/turing_dz206/style/images/8.png" /></a>
+                    </div>
+                </div>
+                <div class="pic_text overflowH">
+                	<!--[diy=tr018]--><div id="tr018" class="area"></div><!--[/diy]-->
+                </div>
+                <div class="text_list">
+                	<!--[diy=tr027]--><div id="tr027" class="area"></div><!--[/diy]-->
+                </div>
+            </div>
+            <div class="big_column">
+            	<div class="big_title overflowH">
+                	<a href="#"><h2>网贷交流</h2></a>
+                    <div class="big_more">
+                        <a href="#">更多<img src="template/turing_dz206/style/images/8.png" /></a>
+                    </div>
+                </div>
+                <div class="pic_text overflowH">
+                <!--[diy=tr019]--><div id="tr019" class="area"></div><!--[/diy]-->	
+                </div>
+                <div class="text_list">
+                <!--[diy=tr028]--><div id="tr028" class="area"></div><!--[/diy]-->
+                </div>
+            </div>
+            <div class="big_column big_mar">
+            	<div class="big_title overflowH">
+                	<a href="#"><h2>网贷考察</h2></a>
+                    <div class="big_more">
+                        <a href="#">更多<img src="template/turing_dz206/style/images/8.png" /></a>
+                    </div>
+                </div>
+                <div class="pic_text overflowH">
+                	<!--[diy=tr020]--><div id="tr020" class="area"></div><!--[/diy]-->
+                </div>
+                <div class="text_list">
+                	<!--[diy=tr029]--><div id="tr029" class="area"></div><!--[/diy]-->
+                </div>
+            </div>
+            <div class="big_column">
+            	<div class="big_title overflowH">
+                	<a href="#"><h2>活动热点</h2></a>
+                    <div class="big_more">
+                        <a href="#">更多<img src="template/turing_dz206/style/images/8.png" /></a>
+                    </div>
+                </div>
+                <div class="pic_text overflowH">
+                	<!--[diy=tr021]--><div id="tr021" class="area"></div><!--[/diy]-->
+                </div>
+                <div class="text_list">
+                	<!--[diy=tr030]--><div id="tr030" class="area"></div><!--[/diy]-->
+                </div>
+            </div>
+        </div>
+        
+        <div class="big_right">
+        	<div class="zhoubao">
+            <!--[diy=tr046]--><div id="tr046" class="area"></div><!--[/diy]-->                
+            </div>
+            
+            <div class="publish">
+            	<div class="pb_title overflowH">
+                	<a href="#"><h2>发帖排行</h2></a>
+                    <div class="pb_more">
+                        <span class="pb_sbg">月</span>
+                        <span>周</span>
+                        <span>日</span>
+                        <span>总</span>
+                	</div>
+                </div>
+                <div class="pb_contentox">
+                    <div class="pb_content">
+                    <!--[diy=tr102]--><div id="tr102" class="area"></div><!--[/diy]-->
+                    </div>
+                    <div class="pb_content">
+                    <!--[diy=tr003]--><div id="tr003" class="area"></div><!--[/diy]-->
+                    </div>
+                    <div class="pb_content">
+                    <!--[diy=tr004]--><div id="tr004" class="area"></div><!--[/diy]-->
+                    </div>
+                    <div class="pb_content">
+                    <!--[diy=tr005]--><div id="tr005" class="area"></div><!--[/diy]-->
+                    </div>                  
+                    
+                    
+                </div>
+            </div>
+		    <script>
+            jq(".pb_content").eq(0).show().siblings().hide();
+
+			jq(".pb_more span").mouseenter(
+			function(){
+				jq(this).addClass("pb_sbg").siblings().removeClass("pb_sbg");
+				jq(".pb_content").eq(jq(this).index()).show().siblings().hide();
+				}
+			)
+			</script>
+        </div>
+    </div>  
+    <!--[diy=tr045]--><div id="tr045" class="area"></div><!--[/diy]-->
+    <div class="bigbox1 overflowH clearbox">
+    	<div class="big_left">
+        	<div class="big_column big_mar mar_top">
+            	<div class="big_title overflowH">
+                	<a href="#"><h2>P2P理财</h2></a>
+                    <div class="big_more">
+                        <a href="#">更多<img src="template/turing_dz206/style/images/8.png" /></a>
+                    </div>
+                </div>
+                <div class="pic_text overflowH">
+                	<!--[diy=tr022]--><div id="tr022" class="area"></div><!--[/diy]-->
+                </div>
+                <div class="text_list">
+                	<!--[diy=tr031]--><div id="tr031" class="area"></div><!--[/diy]-->
+                </div>
+            </div>
+            <div class="big_column mar_top">
+            	<div class="big_title overflowH">
+                	<a href="#"><h2>网贷政策</h2></a>
+                    <div class="big_more">
+                        <a href="#">更多<img src="template/turing_dz206/style/images/8.png" /></a>
+                    </div>
+                </div>
+                <div class="pic_text overflowH">
+                	<!--[diy=tr023]--><div id="tr023" class="area"></div><!--[/diy]-->
+                </div>
+                <div class="text_list">
+                	<!--[diy=tr032]--><div id="tr032" class="area"></div><!--[/diy]-->
+                </div>
+            </div>
+            <div class="big_column big_mar mar_top">
+            	<div class="big_title overflowH">
+                	<a href="#"><h2>互联网金融</h2></a>
+                    <div class="big_more">
+                        <a href="#">更多<img src="template/turing_dz206/style/images/8.png" /></a>
+                    </div>
+                </div>
+                <div class="pic_text overflowH">
+                	<!--[diy=tr024]--><div id="tr024" class="area"></div><!--[/diy]-->
+                </div>
+                <div class="text_list">
+                	<!--[diy=tr033]--><div id="tr033" class="area"></div><!--[/diy]-->
+                </div>
+            </div>
+            <div class="big_column mar_top">
+            	<div class="big_title overflowH">
+                	<a href="#"><h2>网贷国际</h2></a>
+                    <div class="big_more">
+                        <a href="#">更多<img src="template/turing_dz206/style/images/8.png" /></a>
+                    </div>
+                </div>
+                <div class="pic_text overflowH ">
+                	<!--[diy=tr025]--><div id="tr025" class="area"></div><!--[/diy]-->
+                </div>
+                <div class="text_list">
+                	<!--[diy=tr026]--><div id="tr026" class="area"></div><!--[/diy]-->
+                </div>
+            </div>
+        </div>
+        
+        <div class="big_right" style="margin-top:7px;">
+        	<div class="publish">
+            	<div class="pb_title pb_ph sx overflowH">
+                	<a href="#" class="sx_abg">上线早知道</a>
+                    <a href="#">发标公告</a>
+                </div>
+               <div class="pb_contentbox">
+                    <div class="pb_content1">
+                    <!--[diy=tr006]--><div id="tr006" class="area"></div><!--[/diy]-->
+                    </div>
+                    <div class="pb_content1">
+                     <!--[diy=tr007]--><div id="tr007" class="area"></div><!--[/diy]-->
+                    </div>
+                    
+                    
+                </div>
+            </div>
+            
+            <script>
+			jq(".pb_content1").eq(0).show().siblings().hide();
+			jq(".pb_ph a").mouseenter(
+			function(){
+				jq(this).addClass("sx_abg").siblings().removeClass("sx_abg");
+				jq(".pb_content1").eq(jq(this).index()).show().siblings().hide();
+				}
+			)
+			
+			</script>
+            
+            <div class="publish" style="margin-top:25px;">
+                <div class="pb_title sline sx overflowH">
+                <a href="#" class="sx_abg">网贷维权</a>
+                <a href="#">网贷事件</a>
+                </div>
+                
+                <div class="pb_contentbox">
+                    <div class="pb_content2">
+                     <!--[diy=tr008]--><div id="tr008" class="area"></div><!--[/diy]-->
+                    </div>
+                    
+                    <div class="pb_content2">
+                   <!--[diy=tr009]--><div id="tr009" class="area"></div><!--[/diy]-->
+                    </div>
+                </div>
+            </div>
+			<script>
+			jq(".pb_content2").eq(0).show().siblings().hide();
+			jq(".sline a").mouseenter(
+			function(){
+				jq(this).addClass("sx_abg").siblings().removeClass("sx_abg");
+				jq(".pb_content2").eq(jq(this).index()).show().siblings().hide();
+				}
+			)
+			
+			</script>
+        </div>
+    </div>
+</div>
+
+
+
+
+</div>
+<script src="misc.php?mod=diyhelp&action=get&type=index&diy=yes&r={echo random(4)}" type="text/javascript"></script>
+<!--{template common/footer}-->

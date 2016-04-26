@@ -1,0 +1,20 @@
+
+{  
+  "name": "Form Robot",  
+  "version": "0.1.0",
+  "manifest_version": 2,
+  "description": "Form autocomplete robot",  
+  "browser_action": {
+    "default_title": "Form Robot",
+    "default_popup": "popup.html"
+  },
+  "permissions" : [
+    "https://accounts.google.com"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://accounts.google.com/*"],
+      "js": ["jquery.min.js", "inject.js"]
+    }
+  ]
+}

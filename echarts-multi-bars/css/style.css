@@ -1,7 +1,6 @@
 @charset utf-8;
 
-.main {
-	margin: 10px auto;
+#main .main {
 	width: 860px;
 	border: 1px solid #ccc;
 }

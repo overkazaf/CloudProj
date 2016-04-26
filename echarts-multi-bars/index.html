@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-	<meta charset=utf-8>
+    <meta charset=utf-8>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge, Chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="renderer" content="webkit">
@@ -23,16 +24,16 @@
                 <p class="deal">
                     成交：
                     <span class="num" id="turnover">
-						
-					</span> 利率：
+                        
+                    </span> 利率：
                     <span class="num" id="exponent">
-						
-					</span>人气：<span class="num" id="outcount">
-						
-					</span>
+                        
+                    </span>人气：<span class="num" id="outcount">
+                        
+                    </span>
                 </p>
             </div>
-            <div id="tab-conatiner">
+            <div id="tab-container">
             </div>
         </div>
     </div>
@@ -40,6 +41,7 @@
     $(function() {
         var APP = {
             DEBUG: true,
+            INTERFACE_IMPLEMENTED: false,
             BASE_INTERFACE: 'http://localhost:3000',
             FILE_PATH: {
                 exponent: 'exponent.json',
@@ -53,7 +55,7 @@
             },
             DEALS: ['turnover', 'exponent', 'outcount'],
             TAB_ID: '#tab-list',
-            TAB_CONTAINER_ID: '#tab-conatiner',
+            TAB_CONTAINER_ID: '#tab-container',
             zeroData: null,
             PLAT_IDS: {
                 0: '网贷指数',
@@ -73,21 +75,37 @@
             chartList: []
         };
 
+        function checkDataLoaded () {
+            var flag = true;
+            for (var fileId in APP.DATA) {
+                if (APP.DATA[fileId] == null) {
+                    flag = false;
+                }
+            }
+            return flag;
+        }
 
         function initApp() {
             initData();
             renderTab(initTabEvents);
             $('.charts').hide();
+            Highcharts.setOptions({
+                global: {
+                    useUTC: false
+                }
+            });
 
-            setTimeout(function() {
-                Highcharts.setOptions({
-			        global: {
-			            useUTC: false
-			        }
-			    });
+
+            var fn = function (){
+                if (!checkDataLoaded()){
+                    setTimeout(fn, 500);
+                    return;
+                } 
                 renderDeal();
                 batchRenderCharts();
-            }, 200);
+            };
+
+            fn();
 
         };
 
@@ -114,7 +132,7 @@
             for (var id in APP.PLAT_IDS) {
                 var name = APP.PLAT_IDS[id];
                 var fixedClass = id == 0 ? ' header-item' : '';
-                tpl += '<li data-id="' + id + '" class="tab-list-item'+ fixedClass +'"><span class="arrow"></span><a href="#">' + name + '</a></li>';
+                tpl += '<li data-id="' + id + '" class="tab-list-item' + fixedClass + '"><span class="arrow"></span><a href="#">' + name + '</a></li>';
 
 
                 containerTpl += '<div id="chart_' + id + '" class="tab-container-item"></div>';
@@ -132,9 +150,9 @@
                 var $target = $(ev.target);
                 var index = $target.index();
                 if (index > 0) {
-                	$('.deal-container').hide();
+                    $('.deal-container').hide();
                 } else {
-                	$('.deal-container').show();
+                    $('.deal-container').show();
                 }
 
                 $containers.hide().eq(index).show();
@@ -155,6 +173,7 @@
                     enabled: false, //暂时关闭
                     inputEnabled: false //关闭日期区间的输入
                 },
+                
                 credits: {
                     enabled: false
                 },
@@ -333,26 +352,42 @@
             ];
 
             var series = [{
+                type: 'spline',
                 name: '利率',
                 data: rate,
+                lineWidth: 2,
+                marker : {
+                    fillColor: '#ff4400',
+                    enabled:true,
+                    radius: 4
+                },
                 dataGrouping: {
                     units: groupingUnits
                 },
-                color: '#0e7fb4'
+                color: '#4572A7'
             }, {
                 type: 'column',
                 name: '成交量',
                 data: money,
+                colorByPoint : true,
                 yAxis: 1,
                 dataGrouping: {
                     units: groupingUnits
                 },
-                color: "#0e7fb4"
+                colors: ['#0099ff', '#AA4643', '#89A54E', '#80699B', '#3D96AE', 
+   '#DB843D', '#92A8CD', '#A47D7C', '#B5CA92'],
+                color: "#0099ff"
             }, {
                 type: 'spline',
                 name: '人气',
                 data: outCount,
                 yAxis: 2,
+                lineWidth: 2,
+                marker : {
+                    fillColor: '#2b2b2b',
+                    enabled:true,
+                    radius: 4
+                },
                 dataGrouping: {
                     units: groupingUnits
                 },
@@ -399,18 +434,52 @@
             return APP.BASE_INTERFACE + '/file/' + fileName;
         }
 
+
+
+
+
+
         function getJSON(fileName) {
             return $.getJSON(getFilePath(fileName));
+
+        }
+
+        function getStaticFile(fileId) {
+            //APP.DATA[fileId] = StaticFile[fileId]();
+            var target = {};
+
+
+
+
+
+            return {};
+            var $iframe = $('<iframe>').attr({
+                width:0,height:0,
+                frameBorder:0,
+                src : APP.FILE_PATH[fileId]
+            });
+            $iframe.appendTo($(document.body));
+            $iframe.on('load', function () {
+                var contents = $iframe.contents().find('pre').text();
+                APP.DATA[fileId] = JSON.parse(contents);
+            });
         }
 
         function initData() {
             for (var f in APP.FILE_PATH) {
-                + function(fileId) {
-                	if (!!APP.DATA[fileId]) return;
-                    getJSON(APP.FILE_PATH[fileId]).then(function(data) {
-                        APP.DATA[fileId] = data;
-                    });
-                }(f);
+                if (APP.INTERFACE_IMPLEMENTED) {
+                    + function(fileId) {
+                        if (!!APP.DATA[fileId]) return;
+                        getJSON(APP.FILE_PATH[fileId]).then(function(data) {
+                            APP.DATA[fileId] = data;
+                        });
+                    }(f);
+                } else {
+                    + function(fileId) {
+                        console.log('fileId', fileId);
+                        getStaticFile(fileId);
+                    }(f);
+                }
             }
         }
 

@@ -1,0 +1,186 @@
+@charset utf-8;
+body {
+    background: #c8c8c8;;
+}
+
+.clearfix::after {
+    display: table;
+    content: "";
+    height: 0;
+    clear: both;
+}
+
+div.wrapper {
+    width: 600px;
+    min-height: 600px;
+    margin: 0 auto;
+    background: #ffffff;
+}
+
+header,
+footer {
+    height: 46px;
+}
+
+header {
+    position: relative;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #ccc;
+}
+
+.back {
+    display: inline-block;
+    width: 46px;
+    height: 46px;
+    text-align: center;
+    line-height: 46px;
+    color: #0099ff;
+    font-weight: bold;
+    font-size: 24px;
+    cursor: pointer;
+    font-family: "Times New Roman"
+}
+
+.app-link {
+    float: right;
+    margin: 5px 5px 0 0;
+    width: 88px;
+    height: 36px;
+    line-height: 36px;
+    text-align: center;
+    background: #2577E3;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 0 5px #ccc;
+    font-weight: bold;
+}
+
+#tick {
+    text-align: right;
+    line-height: 40px;
+    padding-right: 20px;
+}
+
+.main {
+    position: relative;
+    height: 630px;
+    margin-bottom: 5px;
+    padding: 5px;
+}
+
+.price-info {
+    margin: 10px 0 10px 0;
+}
+
+.price-info h1 {
+	margin: 5px;
+    font-weight: bold;
+    font-size: 2em;
+    height: 40px;
+    line-height: 40px;
+}
+
+.code-data h2 {
+    margin: 0 0 0 10px;
+    font-size: 5em;
+    font-weight: bold;
+    color: #f00;
+    height: 88px;
+    line-height: 88px;
+}
+
+.code-data p {
+    position: absolute;
+    right: 10px;
+    top: 40px;
+    text-align: right;
+}
+
+#loading {
+	text-align: center;
+	font-size: 100px;
+	line-height: 100px;
+	font-weight: bold;
+	text-shadow: 1px 1px 5px #cccccc;
+	margin-top: 100px;
+}
+.code-data p span {
+    color: #f00;
+    margin-top: 10px;
+    display: block;
+}
+
+.data-info {
+    margin-bottom: 15px;
+}
+
+.data-info ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.data-info ul li {
+    float: left;
+    width: 25%;
+    height: 72px;
+    padding: 15px 0;
+    font-size: 18px;
+    border: 1px solid #ccc;
+    margin-left: -1px;
+    box-sizing: border-box;
+    text-align: center;
+    cursor: pointer;
+}
+
+.data-info ul li b {
+    display: block;
+    margin-top: 5px;
+}
+
+.data-nav a {
+    display: inline-block;
+    padding: 8px;
+    width: 96px;
+    background: #eee;
+    color: #999;
+    text-align: center;
+    margin-left: 2px;
+    font-size: 16px;
+    line-height: 20px;
+    text-decoration: none;
+    border-radius: 4px;
+    box-shadow: 0 0 2px #999;
+}
+
+.data-nav a.active {
+    font-weight: bold;
+    color: #2577E3;
+    background: #ddd;
+}
+
+.data-container {
+    position: relative;
+    width: 590px;
+    height: 370px;
+    margin-top: 10px;
+}
+
+.tooltip-list {
+	margin:0;
+	list-style-type: none;
+}
+
+.code {
+	font-weight: bold;
+}
+
+.green {
+	color: #6bb34f !important;
+}
+
+.rect {
+    color: #fff;
+    background: #09f;
+}
