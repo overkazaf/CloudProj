@@ -1,19 +1,17 @@
 <!--{template common/header}-->
 <style id="diy_style" type="text/css"></style>
-<link rel="stylesheet" href="template/turing_dz206/style/css/style.css" />
+<link rel="stylesheet" href="template/turing_dz206/style/css/style.css">
 <script src="template/turing_dz206/style/js/jquery.js"></script>
-
+<script src="template/turing_dz206/style/js/highstock.js"></script>
 <!-- Client JavaScript --> 
 <script src="template/turing_dz206/style/js/jquery.reslider.js"></script>
 
 <script type="text/javascript">  jq = jQuery.noConflict(); jq(function(){}); </script>
+<script type="text/javascript" src="template/turing_dz206/style/js/init-chart.js" charset="utf-8"></script>
 
 
 
 
-
-
- <script src="template/turing_dz206/style/js/echarts.common.min.js"></script>
 
 
 
@@ -159,22 +157,30 @@
     	<div class="num_left">
         	
             <div id="main" style="width: 825px;height:545px; float:left;">
-<script src="template/turing_dz206/style/js/highstock.js"></script>              
+ 
 <div class="main-container clearfix">
         <nav class="nav fl">
-            <ul id="tab-list">
+            <ul id="chart-tab-list">
             </ul>
         </nav>
         <div class="charts fl">
             <div class="deal-container">
                 <p class="deal">
-                    ¿¿¿
+                    ³É½»£º
                     <span class="num" id="turnover">
-
-                    </span> ¿¿¿
+                        
+                    </span> ÀûÂÊ£º
                     <span class="num" id="exponent">
-
-                    < 
+                        
+                    </span>ÈËÆø£º<span class="num" id="outcount">
+                        
+                    </span>
+                </p>
+            </div>
+            <div id="tab-container">
+            </div>
+        </div>
+    </div>
         </div>
    
         <div class="num_right">

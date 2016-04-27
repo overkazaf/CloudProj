@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset=utf-8>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge, Chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="renderer" content="webkit">
+    <meta name="author" content="overkazaf">
+    <title>GAUGE CHART</title>
+    <style>
+		#main {
+			width: 150px;
+			height: 150px;
+			margin: 100px auto;
+		}
+    </style>
+</head>
+
+<body>
+    <div id="main"></div>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script>
+    $(function() {
+        var APP = {
+            USE_STATIC_DATA: true,
+            SERIES_NAME : '图表指标',
+            REMOTE_INTERFACE: '',
+            DATA: {value: 40, name: '完成率'}
+        };
+        var dom = $('#main')[0];
+        var chart = echarts.init(dom);
+
+        getChartData(function(data) {
+            // 缓存服务端的数据
+            APP.DATA = data;
+            // 构建图表配置项
+            var chartOption = getChartOption(data);
+            // 渲染图表
+            chart.setOption(chartOption);
+        });
+
+        /**
+         * [getChartData 获取图表数据]
+         * @param  {Function} cb [回调函数]
+         * @return {[type]}      [description]
+         */
+        function getChartData(cb) {
+            if (APP.USE_STATIC_DATA) {
+                var json = APP.DATA;
+
+                cb(json);
+            } else {
+                $.ajax({
+                    url: APP.REMOTE_INTERFACE,
+                    type: 'get',
+                    dataType: 'JSON',
+                    success: function(data) {
+                        cb && cb(data);
+                    }
+                });
+            }
+        }
+
+        /**
+         * [getChartOption 根据给定的数据，生成图表配置项]
+         * @param  {[type]} data [图表数据]
+         * @return {[type]}      [图表配置项对象]
+         */
+        function getChartOption(data) {
+
+            var option = option = {
+                tooltip : {
+                    formatter: "{a} <br/>{b} : {c}%"
+                },
+                series: [
+                    {
+                        name: APP.SERIES_NAME,
+                        type: 'gauge',
+                        radius: '100%',
+                        splitNumber: 4,
+                        axisLine : {
+                            lineStyle:{
+                                width:15
+                            }
+                        },
+                        splitLine:{
+                            length:13
+                        },
+                        pointer:{
+                            width:3
+                        },
+                        title : {
+                            show:true,
+                            offsetCenter:[0, '90%'],
+                            textStyle : {
+                                fontSize: 12
+                            }
+                        },
+                        detail: {
+                            formatter:'{value}%',
+                            offsetCenter:[0, '60%'],
+                            textStyle : {
+                                
+                                fontSize: 12
+                            }
+                        },
+                        data: [data]
+                    }
+                ]
+            };
+
+            return option;
+        }
+    });
+    </script>
+</body>
+
+</html>

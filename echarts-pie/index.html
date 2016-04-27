@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset=utf-8>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge, Chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="renderer" content="webkit">
+    <meta name="author" content="overkazaf">
+    <title>PIE CHART</title>
+    <style>
+    #main {
+        width: 800px;
+        height: 600px;
+        margin: 100px auto;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="main"></div>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script>
+    $(function() {
+        var APP = {
+            USE_STATIC_DATA: true, // 是否采用默认的静态数据
+            CHART_TITLE: '图表标题',
+            CHART_SUBTITLE: '图表子标题',
+            PIE_LIMIT: 3,
+            SERIES_NAME: '名字', // 数据项的描述
+            REMOTE_INTERFACE: 'http://112.124.57.155:81/ajax/Handler.ashx?cmd=pie', // 实际使用中的数据接口地址
+            DATA: [{
+                name: "超级用户",
+                value: 102636
+            }, {
+                name: "陈婷",
+                value: 467
+            }, {
+                name: "黄庆",
+                value: 185
+            }, {
+                name: "孔太平",
+                value: 3380
+            }, {
+                name: "黎山青",
+                value: 8468
+            }, {
+                name: "黎渊",
+                value: 80
+            }, {
+                name: "李琳阳",
+                value: 16160
+            }, {
+                name: "李茂林",
+                value: 136337
+            }, {
+                name: "刘斌",
+                value: 6451
+            }, {
+                name: "刘锐霞",
+                value: 1335
+            }, {
+                name: "王伟",
+                value: 272
+            }, {
+                name: "吴岳洲",
+                value: 242171
+            }, {
+                name: "徐恒",
+                value: 246429
+            }, {
+                name: "严志全",
+                value: 880
+            }, {
+                name: "袁峰",
+                value: 714936
+            }, {
+                name: "周开昆",
+                value: 1110
+            }, {
+                name: "周政",
+                value: 12406
+            }, {
+                name: "祝瑜",
+                value: 107205
+            }]
+        };
+        var dom = $('#main')[0];
+        var chart = echarts.init(dom);
+
+        getChartData(function(data) {
+            // 缓存服务端的数据
+            APP.DATA = data;
+
+            // 构建图表配置项
+            var chartOption = getChartOption(data);
+
+            // 渲染图表
+            chart.setOption(chartOption);
+        });
+
+        /**
+         * [getChartData 获取图表数据]
+         * @param  {Function} cb [回调函数]
+         * @return {[type]}      [description]
+         */
+        function getChartData(cb) {
+            if (APP.USE_STATIC_DATA) {
+                // 本地测试，使用静态数据
+                cb(APP.DATA);
+            } else {
+                // 使用自己开发的数据接口
+                // var $iframe = $('<iframe>');
+                // $iframe.attr({
+                //     src : APP.REMOTE_INTERFACE
+                // });
+                // $iframe.appendTo($(document.body));
+                // $iframe.on('load', function (){
+                //     var text = $iframe.contents().find('pre').text;
+                //     var json = JSON.parse(text);
+                //     console.log('onload event triggered');
+                //     cb(json);
+                // });
+
+                $.getJSON(APP.REMOTE_INTERFACE, function(data) {
+                    cb(data);
+                });
+            }
+        }
+
+        function clone(obj) {
+            if (typeof obj !== 'object' || obj === null || obj === undefined) return obj;
+
+            var ret = new obj.constructor();
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    ret[key] = clone(obj[key]);
+                }
+            }
+
+            return ret;
+        }
+
+        /**
+         * [getChartOption 根据给定的数据，生成图表配置项]
+         * @param  {[type]} data [图表数据]
+         * @return {[type]}      [图表配置项对象]
+         */
+        function getChartOption(data) {
+            var keys = [];
+            // 把图表各项的名字抽取出来， 放进数组内
+            $.each(data, function(index, item) {
+                keys.push(item['name']);
+            });
+
+            var cloned = clone(data);
+            cloned = cloned.sort(function(a, b) {
+                return +b['value'] - +a['value'];
+            }).filter(function(item, index) {
+                return index < APP.PIE_LIMIT;
+            })
+
+            console.log(cloned);
+
+            var option = {
+                title: {
+                    text: APP.CHART_TITLE,
+                    subtext: APP.CHART_SUBTITLE,
+                    x: 'center'
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: "{a} <br/>{b} : {c} ({d}%)"
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    data: keys
+                },
+               
+                series: [{
+                    name: 'APP.SERIES_NAME',
+                    type: 'pie',
+                    selectedMode: 'single',
+                    radius: [0, '30%'],
+
+                    label: {
+                        normal: {
+                            position: 'inner'
+                        }
+                    },
+                    labelLine: {
+                        normal: {
+                            show: false
+                        }
+                    },
+                    data: cloned
+                }, {
+                    name: APP.SERIES_NAME,
+                    type: 'pie',
+                    radius: ['40%', '55%'],
+                    data: data,
+                    itemStyle: {
+                        emphasis: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            };
+            return option;
+        }
+    });
+    </script>
+</body>
+
+</html>
