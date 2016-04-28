@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset=utf-8>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge, Chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="renderer" content="webkit">
+    <meta name="author" content="overkazaf">
+    <title>LINE CHART</title>
+    <style>
+    #main {
+        width: 400;
+        height: 300px;
+        margin: 100px auto;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="main"></div>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script>
+    $(function() {
+        var APP = {
+            USE_STATIC_DATA: true,
+            TITLE: '图表标题',
+            SUB_TITLE: '图表子标题',
+            SERIES_NAME: '图表指标',
+            REMOTE_INTERFACE: '',
+            DATA: {
+                category: [
+                    "2015-05",
+                    "2015-06",
+                    "2015-07",
+                    "2015-08",
+                    "2015-09",
+                    "2015-10",
+                    "2015-11",
+                    "2015-12",
+                    "2016-01",
+                    "2016-02",
+                    "2016-03",
+                    "2016-04"
+                ],
+                series: [{
+                    id: 0,
+                    name: "武汉",
+                    type: "line",
+                    itemStyle: {
+                        normal: {
+                            color: null
+                        }
+                    },
+                    data: [
+                        661410,
+                        884219,
+                        959857,
+                        939578,
+                        1204959,
+                        1020401,
+                        1006741,
+                        1305744,
+                        1529924,
+                        1442021,
+                        1594630,
+                        1313652
+                    ]
+                }, {
+                    id: 1,
+                    name: "咸宁",
+                    type: "line",
+                    itemStyle: {
+                        normal: {
+                            color: null
+                        }
+                    },
+                    data: [
+                        198678,
+                        231163,
+                        342975,
+                        393704,
+                        507516,
+                        407870,
+                        390875,
+                        360565,
+                        541957,
+                        357364,
+                        279500,
+                        293130
+                    ]
+                }],
+                legend: [
+                    "武汉",
+                    "咸宁"
+                ]
+            }
+        };
+        var dom = $('#main')[0];
+        var chart = echarts.init(dom);
+
+        getChartData(function(data) {
+            // 缓存服务端的数据
+            APP.DATA = data;
+            // 构建图表配置项
+            var chartOption = getChartOption(data);
+            // 渲染图表
+            chart.setOption(chartOption);
+        });
+
+        /**
+         * [getChartData 获取图表数据]
+         * @param  {Function} cb [回调函数]
+         * @return {[type]}      [description]
+         */
+        function getChartData(cb) {
+            if (APP.USE_STATIC_DATA) {
+                var json = APP.DATA;
+
+                cb(json);
+            } else {
+                $.getJSON(APP.REMOTE_INTERFACE, function(data) {
+                    cb && cb(data);
+                });
+            }
+        }
+
+        /**
+         * [getChartOption 根据给定的数据，生成图表配置项]
+         * @param  {[type]} data [图表数据]
+         * @return {[type]}      [图表配置项对象]
+         */
+        function getChartOption(data) {
+            var option = {
+                title: {
+                    text: APP.TITLE,
+                    subtext: APP.SUB_TITLE
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: data.legend
+                },
+                calculable: true,
+                xAxis: [{
+                    type: 'category',
+                    data: data.category
+                }],
+                yAxis: [{
+                    type: 'value'
+                }],
+                series: data.series
+            };
+
+            return option;
+        }
+    });
+    </script>
+</body>
+
+</html>

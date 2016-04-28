@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset=utf-8>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge, Chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="renderer" content="webkit">
+    <meta name="author" content="overkazaf">
+    <title>BAR CHART</title>
+    <style>
+    #main {
+        width: 400;
+        height: 300px;
+        margin: 100px auto;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="main"></div>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script>
+    $(function() {
+        var APP = {
+            USE_STATIC_DATA: true,
+            TITLE: '图表标题',
+            SUB_TITLE: '图表子标题',
+            SERIES_NAME: '图表指标',
+            REMOTE_INTERFACE: '',
+            DATA: {
+                category: [
+                    "04-13",
+                    "04-14",
+                    "04-15",
+                    "04-16",
+                    "04-17",
+                    "04-18",
+                    "04-19",
+                    "04-20",
+                    "04-21",
+                    "04-22",
+                    "04-23",
+                    "04-24",
+                    "04-25",
+                    "04-26",
+                    "04-27"
+                ],
+                series: [{
+                    data: [
+                        7388,
+                        8315,
+                        10705,
+                        10211,
+                        17855,
+                        5595,
+                        9969,
+                        5860,
+                        13221,
+                        10741,
+                        43460,
+                        9410,
+                        10544,
+                        16644,
+                        7887
+                    ]
+                }],
+                legend: [
+                    "咸宁"
+                ]
+            }
+        };
+        var dom = $('#main')[0];
+        var chart = echarts.init(dom);
+
+        getChartData(function(data) {
+            // 缓存服务端的数据
+            APP.DATA = data;
+            // 构建图表配置项
+            var chartOption = getChartOption(data);
+            // 渲染图表
+            chart.setOption(chartOption);
+        });
+
+        /**
+         * [getChartData 获取图表数据]
+         * @param  {Function} cb [回调函数]
+         * @return {[type]}      [description]
+         */
+        function getChartData(cb) {
+            if (APP.USE_STATIC_DATA) {
+                var json = APP.DATA;
+
+                cb(json);
+            } else {
+                $.getJSON(APP.REMOTE_INTERFACE, function(data) {
+                    cb && cb(data);
+                });
+            }
+        }
+
+        /**
+         * [getChartOption 根据给定的数据，生成图表配置项]
+         * @param  {[type]} data [图表数据]
+         * @return {[type]}      [图表配置项对象]
+         */
+        function getChartOption(data) {
+            var option = {
+                title: {
+                    text: APP.TITLE,
+                    subtext: APP.SUB_TITLE
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: data.legend
+                },
+                calculable: true,
+                xAxis: [{
+                    type: 'category',
+                    data: data.category
+                }],
+                yAxis: [{
+                    type: 'value'
+                }],
+                series: {
+                    type : 'bar',
+                    name : 'xx',
+                    data : data.series[0].data
+                }
+            };
+
+            return option;
+        }
+    });
+    </script>
+</body>
+
+</html>

@@ -27,7 +27,7 @@
             USE_STATIC_DATA: true,
             SERIES_NAME : '图表指标',
             REMOTE_INTERFACE: '',
-            DATA: {value: 40, name: '完成率'}
+            DATA: [{value: 40, name: '完成率'}]
         };
         var dom = $('#main')[0];
         var chart = echarts.init(dom);
@@ -52,13 +52,8 @@
 
                 cb(json);
             } else {
-                $.ajax({
-                    url: APP.REMOTE_INTERFACE,
-                    type: 'get',
-                    dataType: 'JSON',
-                    success: function(data) {
-                        cb && cb(data);
-                    }
+                $.getJSON(APP.REMOTE_INTERFACE,  function(data) {
+                    cb && cb(data);
                 });
             }
         }
@@ -79,17 +74,20 @@
                         name: APP.SERIES_NAME,
                         type: 'gauge',
                         radius: '100%',
-                        splitNumber: 4,
+                        splitNumber: 10,
                         axisLine : {
                             lineStyle:{
-                                width:15
+                                width:3
                             }
                         },
                         splitLine:{
-                            length:13
+                            length:12,
+                            lineStyle :{
+                                color:'#09a'
+                            }
                         },
                         pointer:{
-                            width:3
+                            width:2
                         },
                         title : {
                             show:true,
@@ -106,7 +104,7 @@
                                 fontSize: 12
                             }
                         },
-                        data: [data]
+                        data: data
                     }
                 ]
             };
