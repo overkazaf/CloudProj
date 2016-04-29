@@ -607,5 +607,6 @@ $(window).load(function() {
         return ret;
     }
 
+
     initApp();
 });
