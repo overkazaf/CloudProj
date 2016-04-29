@@ -32,7 +32,7 @@
 
             return this;
         },
-
+		getNameMappingArray :getNameMappingArray,
         buildDateVO: function(stime) {
             var d = new Date(stime);
             var dateVO = {
