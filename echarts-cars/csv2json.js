@@ -1,5 +1,5 @@
 var csvjson = require('csvjson');
-csvjson.toObject('./history.csv').output;
-csvjson.toObject('./history.csv').save('./indirect.json');
-csvjson.toObject('./immediate.csv').output;
-csvjson.toObject('./immediate.csv').save('./direct.json');
+csvjson.toObject('./OBD_INFO_HISTORY.csv').output;
+csvjson.toObject('./OBD_INFO_HISTORY.csv').save('./OBD_INFO_HISTORY.json');
+csvjson.toObject('./OBD_INFO_IMMEDIATE_HISTORY.csv').output;
+csvjson.toObject('./OBD_INFO_IMMEDIATE_HISTORY.csv').save('./OBD_INFO_IMMEDIATE_HISTORY.json');

@@ -8,6 +8,13 @@
     <meta name="renderer" content="webkit">
     <meta name="author" content="overkazaf">
     <title>ECHARTS CARS</title>
+    <style>
+		#main {
+			margin: 50px auto;
+			width: 960px;
+			height: 700px;
+		}
+    </style>
 </head>
 
 <body>
@@ -25,7 +32,208 @@
 	及时参数里：车速，引擎温度、转速、负荷
 -->
 
+	<div id="main"></div>
+	<script src="node_modules/echarts/dist/echarts.min.js"></script>
+	<script src="node_modules/jquery/dist/jquery.min.js"></script>
+	<script>
+		$(function () {
+			var APP = {
+				OUTPUT : {
+					DIRECT : 'OUTPUT_DIRECT.json',
+					INDIRECT : 'OUTPUT_INDIRECT.json'
+				}
+			};
 
+			var dom = $('#main')[0];
+			var chart = echarts.init(dom);
+
+			getDirectFile(function (data){
+				console.log('data', data);
+				var option = getChartOption(data);
+				chart.setOption(option);
+			});
+			
+
+
+
+
+			function getDirectFile (cb) {
+				return getFile(APP.OUTPUT.DIRECT, cb);
+			}
+
+			function getInDirectFile (cb) {
+				return getFile(APP.OUTPUT.INDIRECT, cb);
+			}
+
+			function getFile (fileName, callback) {
+				return $.getJSON(fileName, function (data){
+					callback && callback(data);
+				});
+			}
+
+			function normalizeData (d) {
+				var ret = {};
+				d.forEach(function (item) {
+					var id = item['内部ID'];
+					if (! (id in ret)) {
+						ret[id] = [];
+					}
+					
+					var tmp = [];
+					tmp.push(item['入库时间']);
+					tmp.push(item['平均节气门开合角度']);
+					tmp.push(item['平均点火正时']);
+					tmp.push(item['平均进气温度']);
+					tmp.push(item['前一次时间段至此引擎平均转速']);
+					tmp.push(item['当前引擎温度']);
+					tmp.push(item['引擎负荷']);
+
+					ret[id].push(tmp);
+					
+				});
+
+				return ret;
+			}
+
+			function getChartOption (d) {
+				var dataMap = normalizeData(d);
+				var ids = [];
+				var series = [];
+				var dateMap = {};
+				var dates = [];
+				var lineStyle = {
+				    normal: {
+				        width: 1,
+				        opacity: 0.5
+				    }
+				};
+
+
+				for (var id in dataMap) {
+					var carID = '车辆ID:' + id;
+					ids.push(carID);
+					series.push({
+			            name: carID,
+			            type: 'parallel',
+			            lineStyle: lineStyle,
+			            data: dataMap[id]
+					});
+
+					dataMap[id].forEach(function (dt){
+						dateMap[dt[0]] = true;
+					});
+				}
+
+				for (var date in dateMap) {
+					dates.push(date);
+				}
+
+				dates.sort(function (a, b) {
+					return new Date(b) - new Date(a);
+				});
+
+				var schema = [
+				    {name: 'date',   index: 0, text: '入库时间'},
+				    {name: 'param1', index: 1, text: '平均节气门开合角度'},
+				    {name: 'param2', index: 2, text: '平均点火正时'},
+				    {name: 'param3', index: 3, text: '平均进气温度'},
+				    {name: 'param4', index: 4, text: '引擎平均转速'},
+				    {name: 'param5', index: 5, text: '当前引擎温度'},
+				    {name: 'param6', index: 6, text: '引擎负荷'}
+				];
+
+
+				var option = {
+				    backgroundColor: '#333',
+				    legend: {
+				        bottom: 30,
+				        data: ids,
+				        itemGap: 20,
+				        textStyle: {
+				            color: '#fff',
+				            fontSize: 14
+				        }
+				    },
+				    tooltip: {
+				        padding: 10,
+				        backgroundColor: '#222',
+				        borderColor: '#777',
+				        borderWidth: 1,
+				        formatter: function (obj) {
+				            var value = obj[0].value;
+				            return '<div style="border-bottom: 1px solid rgba(255,255,255,.3); font-size: 18px;padding-bottom: 7px;margin-bottom: 7px">'
+				                + obj[0].seriesName + ' ' + value[0] + '日期：'
+				                + value[7]
+				                + '</div>'
+				                + schema[1].text + '：' + value[1] + '<br>'
+				                + schema[2].text + '：' + value[2] + '<br>'
+				                + schema[3].text + '：' + value[3] + '<br>'
+				                + schema[4].text + '：' + value[4] + '<br>'
+				                + schema[5].text + '：' + value[5] + '<br>'
+				                + schema[6].text + '：' + value[6] + '<br>';
+				        }
+				    },
+				    parallelAxis: [
+				        {dim: 0, name: schema[0].text, type:'category', 
+				        	data: dates
+				    	},
+				        {dim: 1, name: schema[1].text},
+				        {dim: 2, name: schema[2].text},
+				        {dim: 3, name: schema[3].text},
+				        {dim: 4, name: schema[4].text},
+				        {dim: 5, name: schema[5].text},
+				        {dim: 6, name: schema[6].text}
+				    ],
+				    visualMap: {
+				        show: true,
+				        min: 0,
+				        max: 150,
+				        dimension: 2,
+				        inRange: {
+				            color: ['#d94e5d','#eac736','#50a3ba'].reverse(),
+				            // colorAlpha: [0, 1]
+				        }
+				    },
+				    parallel: {
+				        left: '5%',
+				        right: '10%',
+				        bottom: 140,
+				        parallelAxisDefault: {
+				            type: 'value',
+				            name: '油耗相关参数',
+				            nameLocation: 'end',
+				            nameGap: 20,
+				            nameTextStyle: {
+				                color: '#fff',
+				                fontSize: 12
+				            },
+				            axisLine: {
+				                lineStyle: {
+				                    color: '#aaa'
+				                }
+				            },
+				            axisTick: {
+				                lineStyle: {
+				                    color: '#777'
+				                }
+				            },
+				            splitLine: {
+				                show: false
+				            },
+				            axisLabel: {
+				                textStyle: {
+				                    color: '#fff'
+				                }
+				            }
+				        }
+				    },
+				    series: series
+				};
+
+				return option;
+			};
+		});
+	</script>
 </body>
 
 </html>
