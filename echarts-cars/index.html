@@ -8,31 +8,16 @@
     <meta name="renderer" content="webkit">
     <meta name="author" content="overkazaf">
     <title>ECHARTS CARS</title>
-    <style>
-		#main {
-			margin: 50px auto;
-			width: 960px;
-			height: 700px;
-		}
-    </style>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 
 <body>
 
-<!--
-	综合参数里：直接影响有 
-		节气门开合角度，
-		油压（excel里数据为0），
-		点火正时，
-		进气温度。
-
-	间接影响：冷却液温度，空气流量。电瓶电压
-	
-
-	及时参数里：车速，引擎温度、转速、负荷
--->
-
-	<div id="main"></div>
+	<div class="main" id="main0"></div>
+	<div class="main" id="main1"></div>
+	<div class="control">
+		<p id="currentView">直接影响参数视图</p>
+	<button id="switchView" class="btn btn-primary">切换视图</button></div>
 	<script src="node_modules/echarts/dist/echarts.min.js"></script>
 	<script src="node_modules/jquery/dist/jquery.min.js"></script>
 	<script>
@@ -41,18 +26,101 @@
 				OUTPUT : {
 					DIRECT : 'OUTPUT_DIRECT.json',
 					INDIRECT : 'OUTPUT_INDIRECT.json'
+				},
+				ARRAY : {
+					DIRECT : ['内部ID', '入库时间', '平均节气门开合角度', '平均点火正时', '平均进气温度', '前一次时间段至此引擎平均转速','当前引擎温度', '引擎负荷', '平均油耗'],
+					INDIRECT : ['内部ID', '入库时间', '平均冷却液水温', '平均空气流量', '平均电瓶电压','平均油耗']
+				},
+				CACHE : {},
+				CARS : {
+					"352016850081381" : "长安SC7134CB5轿车",
+					"352016818128522" :	"奇瑞SQR7160ES轿车",
+					"352016889385480" :	"奇瑞SQR7151A217轿车",
+					"352016864499108" :	"颐达DFL7160AB轿车",
+					"352016857330054" :	"长安SC7134C轿车",
+					"352016802932327" :	"速腾FV7146TATG轿车",
+					"352016857330088" :	"长安SC7139A4B轿车",
+					"352016891550154" :	"起亚YQZ6430AE轻型客车",
+					"352016840869622" :	"长安SC7150G轿车",
+					"352016859398034" :	"长安SC7150G轿车"
 				}
 			};
 
-			var dom = $('#main')[0];
-			var chart = echarts.init(dom);
+			var lineStyle = {
+			    normal: {
+			        width: 1,
+			        opacity: 0.5
+			    }
+			};
 
+			var dom0 = $('#main0')[0];
+			var dom1 = $('#main1')[0];
+			var chart0, chart1;
+			
+
+			function clone (obj) {
+				if (typeof obj !== 'object') return obj;
+				var ret = new obj.constructor();
+				for (var key in obj) {
+					if (obj.hasOwnProperty(key)) {
+						ret[key] = clone(obj[key]);
+					}
+				}
+				return ret;
+			}
+
+			$('.main').hide();
 			getDirectFile(function (data){
-				console.log('data', data);
-				var option = getChartOption(data);
-				chart.setOption(option);
+				$('#main0').fadeIn('slow');
+				chart0 = echarts.init(dom0);
+				var option = getDirectChartOption(data, clone(APP.ARRAY.DIRECT));
+				chart0.setOption(option);
 			});
 			
+			getInDirectFile(function (d){
+				chart1 = echarts.init(dom1);
+				var option = getInDirectChartOption(d, clone(APP.ARRAY.INDIRECT));
+				chart1.setOption(option);
+			});
+			
+
+			var FSM = {
+				'direct' : {
+					'buttonWasPressed' : function () {
+						$('.main').hide();
+						$('#main1').fadeIn('slow');
+						$('#currentView').text('间接影响参数视图');
+
+						this.currentStatus = 'indirect';
+					}
+					
+				},
+				'indirect' : {
+					'buttonWasPressed' : function () {
+						$('.main').hide();
+						$('#main0').fadeIn('slow');
+						$('#currentView').text('直接影响参数视图');
+
+						this.currentStatus = 'direct';
+					}
+				}
+			};
+
+			function ToggleChartView () {
+				this.currentStatus = 'direct';
+			};
+
+			ToggleChartView.prototype.init = function (id) {
+				var that = this;
+				this.button = document.getElementById(id);
+				this.button.onclick = function () {
+					FSM[that.currentStatus].buttonWasPressed.call(that);
+				};
+				return this;
+			};
+
+			var view = new ToggleChartView();
+			view.init('switchView');
 
 
 
@@ -66,27 +134,29 @@
 			}
 
 			function getFile (fileName, callback) {
+				if (APP.CACHE[fileName]) {
+					callback && callback(APP.CACHE[fileName]);
+					return;
+				} 
 				return $.getJSON(fileName, function (data){
+					APP.CACHE[fileName] = data;
 					callback && callback(data);
 				});
 			}
 
-			function normalizeData (d) {
+			function normalizeData (d, keys) {
 				var ret = {};
+				var uuid = keys.shift();
 				d.forEach(function (item) {
-					var id = item['内部ID'];
+					var id = item[uuid];
 					if (! (id in ret)) {
 						ret[id] = [];
 					}
 					
 					var tmp = [];
-					tmp.push(item['入库时间']);
-					tmp.push(item['平均节气门开合角度']);
-					tmp.push(item['平均点火正时']);
-					tmp.push(item['平均进气温度']);
-					tmp.push(item['前一次时间段至此引擎平均转速']);
-					tmp.push(item['当前引擎温度']);
-					tmp.push(item['引擎负荷']);
+					keys.forEach(function (key) {
+						tmp.push(item[key]);
+					});
 
 					ret[id].push(tmp);
 					
@@ -95,22 +165,16 @@
 				return ret;
 			}
 
-			function getChartOption (d) {
-				var dataMap = normalizeData(d);
+			function getDirectChartOption (d, keys) {
+				var dataMap = normalizeData(d, keys);
 				var ids = [];
 				var series = [];
 				var dateMap = {};
 				var dates = [];
-				var lineStyle = {
-				    normal: {
-				        width: 1,
-				        opacity: 0.5
-				    }
-				};
 
 
 				for (var id in dataMap) {
-					var carID = '车辆ID:' + id;
+					var carID = APP.CARS[id];
 					ids.push(carID);
 					series.push({
 			            name: carID,
@@ -138,8 +202,9 @@
 				    {name: 'param2', index: 2, text: '平均点火正时'},
 				    {name: 'param3', index: 3, text: '平均进气温度'},
 				    {name: 'param4', index: 4, text: '引擎平均转速'},
-				    {name: 'param5', index: 5, text: '当前引擎温度'},
-				    {name: 'param6', index: 6, text: '引擎负荷'}
+				    {name: 'param5', index: 5, text: '平均引擎温度'},
+				    {name: 'param6', index: 6, text: '引擎负荷'},
+				    {name: 'param7', index: 7, text: '平均油耗'}
 				];
 
 
@@ -170,7 +235,8 @@
 				                + schema[3].text + '：' + value[3] + '<br>'
 				                + schema[4].text + '：' + value[4] + '<br>'
 				                + schema[5].text + '：' + value[5] + '<br>'
-				                + schema[6].text + '：' + value[6] + '<br>';
+				                + schema[6].text + '：' + value[6] + '<br>'
+				                + schema[7].text + '：' + value[7] + '<br>';
 				        }
 				    },
 				    parallelAxis: [
@@ -182,7 +248,135 @@
 				        {dim: 3, name: schema[3].text},
 				        {dim: 4, name: schema[4].text},
 				        {dim: 5, name: schema[5].text},
-				        {dim: 6, name: schema[6].text}
+				        {dim: 6, name: schema[6].text},
+				        {dim: 7, name: schema[7].text},
+				    ],
+				    visualMap: {
+				        show: true,
+				        min: 0,
+				        max: 150,
+				        dimension: 2,
+				        inRange: {
+				            color: ['#d94e5d','#eac736','#50a3ba'].reverse(),
+				            // colorAlpha: [0, 1]
+				        }
+				    },
+				    parallel: {
+				        left: '5%',
+				        right: '10%',
+				        bottom: 140,
+				        parallelAxisDefault: {
+				            type: 'value',
+				            name: '油耗相关参数',
+				            nameLocation: 'end',
+				            nameGap: 20,
+				            nameTextStyle: {
+				                color: '#fff',
+				                fontSize: 12
+				            },
+				            axisLine: {
+				                lineStyle: {
+				                    color: '#aaa'
+				                }
+				            },
+				            axisTick: {
+				                lineStyle: {
+				                    color: '#777'
+				                }
+				            },
+				            splitLine: {
+				                show: false
+				            },
+				            axisLabel: {
+				                textStyle: {
+				                    color: '#fff'
+				                }
+				            }
+				        }
+				    },
+				    series: series
+				};
+
+				return option;
+			};
+
+
+			function getInDirectChartOption (d, keys) {
+				var dataMap = normalizeData(d, keys);
+				var ids = [];
+				var series = [];
+				var dateMap = {};
+				var dates = [];
+
+
+				for (var id in dataMap) {
+					var carID = APP.CARS[id];
+					ids.push(carID);
+					series.push({
+			            name: carID,
+			            type: 'parallel',
+			            lineStyle: lineStyle,
+			            data: dataMap[id]
+					});
+
+					dataMap[id].forEach(function (dt){
+						dateMap[dt[0]] = true;
+					});
+				}
+
+				for (var date in dateMap) {
+					dates.push(date);
+				}
+
+				dates.sort(function (a, b) {
+					return new Date(b) - new Date(a);
+				});
+
+				var schema = [
+				    {name: 'date',   index: 0, text: '入库时间'},
+				    {name: 'param1', index: 1, text: '平均冷却液水温'},
+				    {name: 'param2', index: 2, text: '平均空气流量'},
+				    {name: 'param3', index: 3, text: '平均电瓶电压'},
+				    {name: 'param4', index: 4, text: '平均油耗'}
+				];
+
+
+				var option = {
+				    backgroundColor: '#333',
+				    legend: {
+				        bottom: 30,
+				        data: ids,
+				        itemGap: 20,
+				        textStyle: {
+				            color: '#fff',
+				            fontSize: 14
+				        }
+				    },
+				    tooltip: {
+				        padding: 10,
+				        backgroundColor: '#222',
+				        borderColor: '#777',
+				        borderWidth: 1,
+				        formatter: function (obj) {
+				            var value = obj[0].value;
+				            return '<div style="border-bottom: 1px solid rgba(255,255,255,.3); font-size: 18px;padding-bottom: 7px;margin-bottom: 7px">'
+				                + obj[0].seriesName + ' ' + value[0] + '日期：'
+				                + value[7]
+				                + '</div>'
+				                + schema[1].text + '：' + value[1] + '<br>'
+				                + schema[2].text + '：' + value[2] + '<br>'
+				                + schema[3].text + '：' + value[3] + '<br>'
+				                + schema[4].text + '：' + value[4] + '<br>';
+				        }
+				    },
+				    parallelAxis: [
+				        {dim: 0, name: schema[0].text, type:'category', 
+				        	data: dates
+				    	},
+				        {dim: 1, name: schema[1].text},
+				        {dim: 2, name: schema[2].text},
+				        {dim: 3, name: schema[3].text},
+				        {dim: 4, name: schema[4].text}
 				    ],
 				    visualMap: {
 				        show: true,
