@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title></title>
+</head>
+
+<body>
+    <div id="main" style="width:400px;height:400px;"></div>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/echarts/build/echarts-all.js"></script>
+    <script>
+    $(function() {
+        var firstChart = echarts.init(document.getElementById('main'));
+
+	    //first chart
+
+	    var datapie = [];
+	    var piecategory = new Array();
+	    var eachdata = new Array();
+	    $.getJSON('employee_type_chart_split.json', function(json) {
+	        // Populate series
+	        piecategory = json.categories;
+	        eachdata = json.data;
+	        for (i = 0; i < json.categories.length; i++) {
+	            datapie[i] = {
+	                value: eachdata[i],
+	                name: piecategory[i]
+	            };
+	        }
+
+	        var firstoption = {
+	            title: {
+	                text: 'Types of Employee',
+	                x: 'center'
+	            },
+	            tooltip: {
+	                trigger: 'item',
+	                formatter: "{a} <br/>{b} : {c} ({d}%)"
+	            },
+	            legend: {
+	                orient: 'vertical',
+	                left: 'left',
+	                data: piecategory
+	            },
+	            toolbox: {
+	                show: true,
+	                feature: {
+	                    mark: {
+	                        show: true
+	                    },
+	                    dataView: {
+	                        show: true,
+	                        readOnly: false,
+	                        lang: ['Data View', 'Close', 'Refresh']
+	                    },
+	                    magicType: {
+	                        show: true,
+	                        type: ['pie', 'funnel'],
+	                        title: {
+	                            Funnel: 'Funnel Chart',
+	                            line: 'Pie Chart'
+	                        },
+	                        option: {
+	                            funnel: {
+	                                x: '25%',
+	                                width: '50%',
+	                                funnelAlign: 'left',
+	                                max: 1548
+	                            }
+	                        }
+	                    },
+	                    restore: {
+	                        show: true,
+	                        title: 'Reset'
+	                    },
+	                    saveAsImage: {
+	                        show: true,
+	                        title: 'Save as Image'
+	                    }
+	                }
+	            },
+	            calculable: true,
+	            series: [{
+	                name: 'Types of Employee',
+	                type: 'pie',
+	                radius: '55%',
+	                center: ['50%', '60%'],
+	                data: datapie,
+	                itemStyle: {
+	                    emphasis: {
+	                        shadowBlur: 10,
+	                        shadowOffsetX: 0,
+	                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+	                    }
+	                }
+	            }]
+	        };
+
+	        firstChart.setOption(firstoption);
+	    });
+    })
+    </script>
+</body>
+
+</html>
