@@ -4,14 +4,54 @@
 <head>
     <meta charset="UTF-8">
     <title>Document</title>
-    <script src="http://g.alicdn.com/ilw/ding/0.9.2/scripts/dingtalk.js"></script>
+    <script src="http://g.alicdn.com/dingding/dingtalk-pc-api/2.3.1/index.js"></script>
     <script src="node_modules/jquery/dist/jquery.min.js"></script>
     <script>
     $(function() {
-        console.log(dd);
-        // $.getJSON('https://oapi.dingtalk.com/get_jsapi_ticket?access_token=ACCESS_TOKE', function(data) {
-        //     console.log(data);
+        var config = {
+            TICKET : '36fb5cc8baed347aadbad513246d1224',
+            TIMESTAMP : +new Date(),
+            NONCESTR : '',
+        };
+
+        // $.get('https://oapi.dingtalk.com/gettoken?corpid=ding913ec731dee2d270&corpsecret=Wl9NRUBkp703Twq22qLXEDBZq2_g1Gooe5AjTRbxgqHvxiupcysDk9Yi1Ty8IkdW', function (ACCESS_TOKEN){
+        //     console.log(ACCESS_TOKEN);
         // });
+        // List keyArray = sort(noncestr,timestamp,jsapi_ticket,url);
+
+        // String str = assemble(keyArray);
+
+        // signature = sha1(str);
+
+         DingTalkPC.config({
+            agentId: '22795777', // 必填，微应用ID
+            corpId: 'ding913ec731dee2d270',//必填，企业ID
+            timeStamp: +new Date(), // 必填，生成签名的时间戳
+            nonceStr: 'asdfasdf', // 必填，生成签名的随机串
+            signature: '', // 必填，签名
+            jsApiList: ['device.notification.alert', 'device.notification.confirm'] // 必填，需要使用的jsapi列表
+        });
+
+        DingTalkPC.ready(function(res){
+          /*{
+              authorizedAPIList: ['device.notification.alert'], //已授权API列表
+              unauthorizedAPIList: [''], //未授权API列表
+          }*/
+          alert('成功');
+
+          DingTalkPC.runtime.permission.requestAuthCode({
+                corpId: "ding913ec731dee2d270", //企业ID
+                onSuccess: function(result) {
+                /*{
+                    code: 'hYLK98jkf0m' //string authCode
+                }*/
+                },
+                onFail : function(err) {}
+
+            })
+        });
+
+
     });
     </script>
 </head>
