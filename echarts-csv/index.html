@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	<div id="main" style="width:600px;height:400px;margin: 100px auto;border: 1px solid #aaaaaa;"></div>
+	<script src="node_modules/jquery/dist/jquery.min.js"></script>
+	<script src="node_modules/echarts/dist/echarts.min.js"></script>
+	<script>
+		$(function () {
+			var APP = {
+				chart : null,
+				FILE_PATH : {
+					'history' :  'csv/bls.csv',
+					'basic' :  'csv/jbxx.csv',
+					'district' :  'csv/xzqh.csv',
+					'AC' :  'csv/ArchivesCases.csv',
+					'DF' :  'csv/DangerFactors.csv',
+					'GB' :  'csv/GB_native.csv'
+				},
+				cache : {},
+				init : function () {
+					var dom = $('#main')[0];
+					this.chart = echarts.init(dom);
+					this.loadDataAsync('history');
+				},
+				loadDataAsync : function (fileName) {
+					var _this_ = this;
+					getFile(fileName, function (data){
+						console.log(data);
+						var json = _this_.proccessData(data);
+						_this_.render(json);
+					});
+				},
+				proccessData : function (rawData) {
+					// 数据处理
+					var json =  {};
+					var parsed = JSON.parse(rawData);
+
+					return json; 
+					
+				},
+				render : function (json) {
+					var option = getChartOption(json);
+					this.chart.setOption(option);
+				}
+			};
+
+			function getChartOption (json) {
+
+				return json;
+			}
+
+
+			function getFile (fileName, cb) {
+				if (!!APP.cache[fileName]) {
+					cb && cb(APP.cache[fileName]);
+				} else {
+					$.ajax({
+						type : 'get',
+						dataType : 'text',
+						url : APP.FILE_PATH[fileName],
+						success : function (content) {
+							APP.cache[fileName] = content;
+							cb && cb(content);
+						}
+					});
+				}
+			};
+
+
+			APP.init();
+		});
+	</script>
+</body>
+</html>
