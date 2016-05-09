@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="main"></div>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script>
+    $(function() {
+        var APP = {
+            chart: null,
+            WIDTH: 800,
+            HEIGHT: 600,
+            TITLE: '饼图标题',
+            SUB_TITLE: '饼图子标题',
+            SERIES_NAME: '序列标题',
+            FILE_TO_READ : 'basic',
+            NEED_TO_MERGE : !0,
+            MERGE_FILE : 'history',
+            MERGE_KEY : '病案号',
+            FILE_PATH: {
+                'history': 'output/DeseaseHistory.json',
+                'basic': 'output/BasicInfo.json',
+                'district': 'output/AdministrativeArea.json',
+                'AC': 'output/ArchivesCases.json',
+                'DF': 'output/DangerFactors.json',
+                'GB': 'output/GB_native.json'
+            },
+            cache: {},
+            init: function() {
+            	var $dom = $('#main');
+                var dom = $dom[0];
+
+                $dom.css({
+                	width : APP.WIDTH + 'px',
+                	height : APP.HEIGHT + 'px'
+                });
+                this.chart = echarts.init(dom);
+                this.loadDataAsync(this.FILE_TO_READ);
+            },
+            loadDataAsync: function(fileName) {
+                var _this_ = this;
+                getFile(fileName, function(data) {
+                    var json;
+                    if (APP.NEED_TO_MERGE) {
+                        var cached = JSON.parse(data);
+                        getFile(APP.MERGE_FILE, function (ext_data){
+                            var extJSON = JSON.parse(ext_data);
+                            json = _this_.mergeData(cached, extJSON, APP.MERGE_KEY)
+
+                            json = _this_.proccessData(json);
+
+                            _this_.render(json);
+                        })
+                    } else {
+                        json = _this_.proccessData(data);
+                        _this_.render(json);
+                    }
+
+                    
+                });
+            },
+            mergeData : function (a, b, key) {
+                var list = [];
+                var cacheA = {},
+                    cacheB = {};
+
+                a.forEach(function (it){
+                    cacheA[it[key]] = it;
+                });
+
+                b.forEach(function (it){
+                    cacheB[it[key]] = it;
+                });
+
+
+                var map = {};
+                for (var keya in cacheA) {
+                    if (keya in cacheB) {
+                        list.push($.extend({}, cacheA[keya], cacheB[keya]))
+                        map[keya] = true;
+                    }
+                }
+
+                for (var keyb in cacheB) {
+                    if (!map[keyb]) {
+                        list.push(cacheB[keyb]);
+                    }
+                }
+
+
+                return list;
+            },
+            proccessData: function(rawData) {
+                // 数据处理
+                var parsed = typeof rawData === 'string' ? JSON.parse(rawData):rawData;
+
+                var target = {};
+                parsed.forEach(function (item) {
+                    if (!target[item['职业']]) {
+                        target[item['职业']] = [];
+                    }
+
+                    target[item['职业']].push(item);
+                });
+
+                
+                return target;
+
+            },
+            render: function(json) {
+                var option = getChartOption(json);
+                APP.chart.setOption(option);
+            }
+        };
+
+        function getChartOption(json) {
+            var legendData = ['既往脑卒中', '既往短暂性脑缺血发作TIA', '高危', '中危', '低危'];
+            var splitData = {};
+            var collectMap = {};
+            var seriesData = [];
+            var xData = [];
+            var yData = [];
+
+            for (var i in legendData) {
+                splitData[legendData[i]] = []
+            }
+
+            for (var attr in json) {
+
+                yData.push(attr);
+
+                var list = json[attr];
+                var tplData = [0,0,0,0,0];
+                list.forEach(function (item) {
+                    if ('有' === item['既往脑卒中'])tplData[0]++;
+                    if ('有' === item['既往短暂性脑缺血发作TIA'])tplData[1]++;
+
+                    if ('高危' === item['危险级']) tplData[2]++;
+                    if ('中危' === item['危险级']) tplData[3]++;
+                    if ('低危' === item['危险级']) tplData[4]++;
+                });
+
+
+                collectMap[attr] = tplData;
+            }
+
+
+            for (var i = 0, it; it = legendData[i]; i++) {
+                var colletionData = [];
+                for (var career in collectMap) {
+                    colletionData.push(collectMap[career][i])
+                }
+
+                var tpl = {
+                    name: it,
+                    type: 'bar',
+                    stack: '总量',
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'insideRight'
+                        }
+                    },
+                    data: colletionData
+                };
+
+                seriesData.push(tpl);
+            }
+
+            var option = {
+                tooltip : {
+                    trigger: 'axis',
+                    axisPointer : {            // 坐标轴指示器，坐标轴触发有效
+                        type : 'shadow'        // 默认为直线，可选为：'line' | 'shadow'
+                    }
+                },
+                legend: {
+                    data: legendData
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis:  {
+                    type: 'value'
+                },
+                yAxis: {
+                    type: 'category',
+                    data: yData
+                },
+                series: seriesData
+            };
+
+            return option;
+        }
+
+
+        function getFile(fileName, cb) {
+            if (!!APP.cache[fileName]) {
+                cb && cb(APP.cache[fileName]);
+            } else {
+                $.ajax({
+                    type: 'get',
+                    dataType: 'text',
+                    url: APP.FILE_PATH[fileName],
+                    success: function(content) {
+                        APP.cache[fileName] = content;
+                        cb && cb(content);
+                    }
+                });
+            }
+        };
+
+
+        APP.init();
+    });
+    </script>
+</body>
+
+</html>

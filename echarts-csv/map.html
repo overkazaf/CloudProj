@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="main"></div>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script src="node_modules/echarts/map/js/china.js"></script>
+    <script>
+    $(function() {
+        var APP = {
+            chart: null,
+            WIDTH: 800,
+            HEIGHT: 600,
+            TITLE: '地图标题',
+            SUB_TITLE: '地图子标题',
+            SERIES_NAME: '序列标题',
+            FILE_TO_READ: 'basic',
+            NEED_TO_MERGE: !0,
+            MERGE_FILE: 'history',
+            MERGE_KEY: '病案号',
+            FILE_PATH: {
+                'history': 'output/DeseaseHistory.json',
+                'basic': 'output/BasicInfo.json',
+                'district': 'output/AdministrativeArea.json',
+                'AC': 'output/ArchivesCases.json',
+                'DF': 'output/DangerFactors.json',
+                'GB': 'output/GB_native.json'
+            },
+            cache: {},
+            init: function() {
+                var $dom = $('#main');
+                var dom = $dom[0];
+
+                $dom.css({
+                    width: APP.WIDTH + 'px',
+                    height: APP.HEIGHT + 'px'
+                });
+                this.chart = echarts.init(dom);
+                this.loadDataAsync(this.FILE_TO_READ);
+            },
+            loadDataAsync: function(fileName) {
+                var _this_ = this;
+                getFile(fileName, function(data) {
+
+                    var json;
+                    if (APP.NEED_TO_MERGE) {
+                        var cached = JSON.parse(data);
+                        getFile(APP.MERGE_FILE, function(ext_data) {
+                            var extJSON = JSON.parse(ext_data);
+                            json = _this_.mergeData(cached, extJSON, APP.MERGE_KEY)
+
+                            json = _this_.proccessData(json);
+
+                            _this_.render(json);
+                        })
+                    } else {
+                        json = _this_.proccessData(data);
+                        _this_.render(json);
+                    }
+
+
+                });
+            },
+            mergeData: function(a, b, key) {
+                var list = [];
+                var cacheA = {},
+                    cacheB = {};
+
+                a.forEach(function(it) {
+                    cacheA[it[key]] = it;
+                });
+
+                b.forEach(function(it) {
+                    cacheB[it[key]] = it;
+                });
+
+
+                var map = {};
+                for (var keya in cacheA) {
+                    if (keya in cacheB) {
+                        list.push($.extend({}, cacheA[keya], cacheB[keya]))
+                        map[keya] = true;
+                    }
+                }
+
+                for (var keyb in cacheB) {
+                    if (!map[keyb]) {
+                        list.push(cacheB[keyb]);
+                    }
+                }
+
+
+                return list;
+            },
+            proccessData: function(rawData) {
+                // 数据处理
+                var parsed = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+
+                var target = {
+                    '既往脑卒中':[],
+                    '既往短暂性脑缺血发作TIA':[],
+                    '高危':[],
+                    '中危':[],
+                    '低危':[]
+                };
+
+                parsed.forEach(function (item){
+                    if ('有' === item['既往脑卒中'])target['既往脑卒中'].push(item);
+                    if ('有' === item['既往短暂性脑缺血发作TIA'])target['既往短暂性脑缺血发作TIA'].push(item);
+
+                    if ('高危' === item['危险级']) target['高危'].push(item);
+                    if ('中危' === item['危险级']) target['中危'].push(item);
+                    if ('低危' === item['危险级']) target['低危'].push(item);
+                })
+                return target;
+
+            },
+            render: function(json) {
+                var option = getChartOption(json);
+                APP.chart.setOption(option);
+            }
+        };
+
+        function getChartOption(json) {
+            var legendData = [];
+            var seriesData = [];
+            var map = {};
+
+            console.log(json)
+            var xData = ['既往脑卒中', '既往短暂性脑缺血发作TIA', '高危', '中危', '低危']
+
+            for (var i = 0, l = xData.length; i < l; i++) {
+                map[xData[i]] = {};
+            }
+
+            for (var attr in json) {
+                legendData.push(attr);
+
+                var list = json[attr];
+
+                list.forEach(function(item) {
+                    var city = parseCityName(item);
+
+                    if ('有' === item['既往脑卒中']) {
+                        if (!map['既往脑卒中'][city]) {
+                            map['既往脑卒中'][city] = 0;
+                        }
+                        map['既往脑卒中'][city]++;
+                    }
+
+                    if ('有' === item['既往短暂性脑缺血发作TIA']) {
+                        if (!map['既往短暂性脑缺血发作TIA'][city]) {
+                            map['既往短暂性脑缺血发作TIA'][city] = 0;
+                        }
+                        map['既往短暂性脑缺血发作TIA'][city]++;
+                    }
+
+                    if ('高危' === item['危险级']) {
+                        if (!map['高危'][city]) {
+                            map['高危'][city] = 0;
+                        }
+                        map['高危'][city]++;
+                    }
+                    
+                    if ('中危' === item['危险级']) {
+                        if (!map['中危'][city]) {
+                            map['中危'][city] = 0;
+                        }
+                        map['中危'][city]++;
+                    }
+
+                    if ('低危' === item['危险级']) {
+                        if (!map['低危'][city]) {
+                            map['低危'][city] = 0;
+                        }
+                        map['低危'][city]++;
+                    }
+                });
+
+                var tplData = [];
+                var currentType = map[attr];
+                for (var city in currentType) {
+                    var sum = getSum(city, map);
+                    var cityCount = map['既往脑卒中'][city];
+                    var cr = getColorRange(cityCount, sum);
+
+                    tplData.push({
+                        name : city,
+                        value : cr
+                    });
+                }
+                
+
+
+                var tpl = {
+                    name: attr,
+                    type: 'map',
+                    mapType: 'china',
+                    roam: false,
+                    label: {
+                        normal: {
+                            show: true
+                        },
+                        emphasis: {
+                            show: true
+                        }
+                    },
+                    data: tplData
+                }
+
+                seriesData.push(tpl);
+            }
+
+
+            var option = {
+                title: {
+                    text: APP.TITLE,
+                    subtext: APP.SUB_TITLE,
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    data: legendData
+                },
+                visualMap: {
+                    min: 0,
+                    max: 100,
+                    left: 'left',
+                    top: 'bottom',
+                    text: ['高', '低'], // 文本，默认为数值文本
+                    calculable: true,
+                    inRange: {
+                        color: ['green', 'yellow' , 'red'],
+                        symbolSize: [30, 100]
+                    }
+                },
+                toolbox: {
+                    show: true,
+                    orient: 'vertical',
+                    left: 'right',
+                    top: 'center',
+                    feature: {
+                        dataView: {
+                            readOnly: false
+                        },
+                        restore: {},
+                        saveAsImage: {}
+                    }
+                },
+                series: seriesData
+            };
+
+
+            return option;
+        }
+
+
+        function getFile(fileName, cb) {
+            if (!!APP.cache[fileName]) {
+                cb && cb(APP.cache[fileName]);
+            } else {
+                $.ajax({
+                    type: 'get',
+                    dataType: 'text',
+                    url: APP.FILE_PATH[fileName],
+                    success: function(content) {
+                        APP.cache[fileName] = content;
+                        cb && cb(content);
+                    }
+                });
+            }
+        };
+
+        function getColorRange (cnt, sum) {
+            return sum;
+            if (sum > 0) {
+                var p = parseFloat(cnt / sum);
+                if (p > 0.03) {
+                    return 100
+                } else if (p > 0.1) {
+                    return 50
+                } else {
+                    return 0
+                }
+            } else {
+                return 0;
+            }
+        }
+
+        function getSum (city, map) {
+            var sum = 0;
+            for (var attr in map) {
+                var current = map[attr];
+                if (city in current) {
+                    sum += current[city];
+                }
+            }
+
+            return sum;
+        }
+
+        function parseCityName (item) {
+            return item['行政区划'].substring(0,2);
+        }
+
+
+        APP.init();
+    });
+    </script>
+</body>
+
+</html>
