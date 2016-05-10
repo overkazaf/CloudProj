@@ -10,10 +10,10 @@ $(window).load(function() {
                 var el = data[i];
                 var obj = new WifiVO({
                     id: el.id,
-                    username: el.username,
+                    username: $.trim(el.username),
                     macadd: el.macadd,
                     ipadd: el.ipadd,
-                    nasip: el.nasip,
+                    nasip: $.trim(el.nasip),
                     stime: el.stime,
                     etime: el.etime,
                     inflow: el.inflow,
@@ -62,6 +62,8 @@ $(window).load(function() {
                         tooltip: { // 让鼠标悬浮到此项时能够显示 `tooltip`。
                                 formatter: function(params) {
                                     var ret = [];
+                                    ret.push('用户名：'+dataItem[1].username);
+                                    ret.push('');
                                     ret.push('起点 / 终点');
                                     ret.push(dataItem[0].name +' 到 ' +dataItem[1].name);
                                     ret.push('');
@@ -198,6 +200,8 @@ $(window).load(function() {
                             tooltip: { // 让鼠标悬浮到此项时能够显示 `tooltip`。
                                 formatter: function(params) {
                                     var ret = [];
+                                    ret.push('用户名：'+dataItem[1].username);
+                                    ret.push('');
                                     ret.push('起点 / 终点');
                                     ret.push(dataItem[0].name +' 到 ' +dataItem[1].name);
                                     ret.push('');
@@ -451,6 +455,7 @@ $(window).load(function() {
                 }
             },
             tooltip: {
+                position: ["50%", "50%"],
                 trigger: 'item'
             },
             legend: {
@@ -522,6 +527,7 @@ $(window).load(function() {
                         period: 6,
                         trailLength: 0.7,
                         color: '#fff',
+                        symbol: "circle",
                         symbolSize: 3
                     },
                     lineStyle: {
@@ -538,7 +544,7 @@ $(window).load(function() {
                         show: true,
                         period: 6,
                         trailLength: 0,
-                        symbol: planePath,
+                        symbol: "circle",
                         symbolSize: 15
                     },
                     lineStyle: {
@@ -625,6 +631,7 @@ $(window).load(function() {
             // to 
             arr.push({
                 name: item.path.to,
+                username: item.username,
                 etime: item.etime,
                 macadd: item.macadd,
                 inflow: item.inflow,

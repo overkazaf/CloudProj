@@ -132,6 +132,7 @@
             this.path.from = fixedFromName;
             this.path.to = fixedToName;
 
+            console.log(fixedFromName, fixedToName)
         }
     };
 
@@ -142,13 +143,24 @@
         for (var i = 0, l = mapping.length; i < l; i++) {
             var item = mapping[i];
             for (var key in item) {
-                if (key.toLowerCase() === from.toLowerCase() || from.toLowerCase().indexOf(key.toLowerCase()) >= 0) {
+                if (key.toLowerCase() === from.toLowerCase() || key.toLowerCase().indexOf(from.toLowerCase()) >= 0) {
                     ret = item[key]['name'];
                     flag = true;
                     break;
                 }
             }
             if (flag) break;
+        }
+
+        if (!flag) {
+            // 处理特殊情况
+            var prefix = "210.31";
+            if (from.substring(0,6).indexOf(prefix) >= 0) {
+                var arr = from.split('.');
+                if (~~arr[2] >= 144 && ~~arr[2] <= 151) {
+                    ret = '天津市教委';
+                }
+            }
         }
         return ret;
     }
@@ -171,6 +183,11 @@
                 "coords": [117.115746, 39.077202]
             }
         }, {
+            "TJTC": {
+                "name": "天津市教委信息中心",
+                "coords": [117.15955, 39.099785]
+            }
+        }, {
             "TJU": {
                 "name": "天津大学",
                 "coords": [117.181503, 39.114877]
@@ -191,6 +208,18 @@
                 "coords": [117.359348, 39.112904]
             }
         }, {
+            "TUST": {
+                "name": "天津科技大学",
+                "coords": [117.278097, 39.077101]
+            }
+        },
+        {
+            "TJ": {
+                "name": "天津市教委信息中心",
+                "coords": [117.15955, 39.099785]
+            }
+        },
+        {
             "TJ": {
                 "name": "天津市教委",
                 "coords": [117.21702, 39.118572]
