@@ -147,22 +147,25 @@
                 var option = getChartOption(json);
                 var _this_ = this;
 
-                APP.chart.setOption(option);
+                var fn = function (){
+                    APP.chart.setOption(option);
+                };
+
+                fn();
 
                 APP.chart.on('mouseover', function () {
-                    if (!$(this).attr('data-mouseover')) {
-                        _this_.renderScatter(json, arguments[0].name);
-                        $(this).attr('data-mouseover', true)
-                    }
-
+                    var _args = arguments;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(function (){
+                        _this_.renderScatter(json, _args[0].name);
+                    }, 500)
                 })
 
                 var timeout;
-                APP.chart.on('globalout', function (){
+                APP.chart.on('mouseout', function (){
                     clearTimeout(timeout);
-                    timeout = setTimeout(function (){
-                        APP.chart.setOption(option);
-                    }, 500)
+                    timeout = setTimeout(fn, 500)
+                    //APP.chart.setOption(option);
                 });
 
                 APP.chart.on('click', function () {
@@ -177,11 +180,14 @@
                 for (var c in json) {
                     var r = json[c];
                     var tpl = '';
+                    var sum = 0;
                     for (var attr in r) {
+                        sum += r[attr];
                         tpl += attr + ' : ' + r[attr] + ' <br />';
                     }
                     result.push(c);
                     result.push(tpl);
+                    result.push('总数：' + sum + '<br />');
                 }
                 return result;
             },
