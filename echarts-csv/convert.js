@@ -49,22 +49,23 @@ var fileMap = {
 		'out' : './output/GB_native.json'
 	}
 };
-function doConvertion () {
-	for (var key in fileMap) {
-		var item = fileMap[key];
-		var _in = item['in'];
-		var _out = item['out'];
+var doConvertion = function (key) {
+	var item = fileMap[key];
+	var _in = item['in'];
+	var _out = item['out'];
 
-		(function (_in, _out){
-			converter.fromFile(_in,function(err,result){
-				if(err) throw err;
-				fs.writeFile(_out, JSON.stringify(result) ,function (err) {
-					if(err) throw err;
-					console.log(_in + ' has been succefully written to ' + _out);
-				})
-			});
-		})(_in, _out);
-	}
+	converter.fromFile(_in,function(err,result){
+		if(err) throw err;
+		fs.writeFile(_out, JSON.stringify(result) ,function (err) {
+			if(err) throw err;
+			console.log(_in + ' has been succefully written to ' + _out);
+		})
+	});
 }
 
-doConvertion();
+// doConvertion('basic');
+// doConvertion('adm');
+doConvertion('history');
+// doConvertion('arc');
+// doConvertion('danger');
+// doConvertion('gb');

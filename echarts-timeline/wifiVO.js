@@ -7,9 +7,14 @@
     function WifiVO(opt) {
         this.id = opt.id;
         this.username = opt.username;
+        this.macadd = opt.macadd;
         this.ipadd = opt.ipadd;
+        this.nasip = opt.nasip;
         this.stime = opt.stime;
         this.etime = opt.etime;
+        this.inflow = opt.inflow;
+        this.outflow = opt.outflow;
+        this.allflow = opt.allflow;
         this.onlinetime = opt.onlinetime;
         this.dateVO = null;
 
@@ -23,10 +28,11 @@
         init: function() {
             var username = this.username;
             var ipadd = this.ipadd;
+            var nasip = this.nasip;
             var stime = this.stime;
 
             this.dateVO = this.buildDateVO(stime);
-            this.path = this.buildRoamPath(username, ipadd);
+            this.path = this.buildRoamPath(username, nasip);
 
             this.fixPathByMapping();
 
@@ -43,9 +49,9 @@
             };
             return dateVO;
         },
-        buildRoamPath: function(username, ipadd) {
+        buildRoamPath: function(username, nasip) {
             var from = username;
-            var to = ipadd;
+            var to = nasip;
             if (username.indexOf('@') >= 0) {
                 var arr = username.split('@');
                 if (arr.length === 2 && arr[1].indexOf('.') >= 0) {
@@ -53,14 +59,9 @@
                 }
             }
 
-            if (ipadd.indexOf('.') >= 0) {
-                var arr = ipadd.split('.');
-                to = arr[0].replace(' ', "");
-            }
-
             var path = {
                 from: from,
-                to: to
+                to: nasip
             };
 
             return path;
@@ -68,15 +69,55 @@
         fixPathByMapping: function() {
             var fromMappingArray = getNameMappingArray();
             var toMappingArray = [{
-                211: {
-                    "name": "天津广播电视大学"
+                "210.31.145.148": {
+                    "name": "天津市教委"
                 }
             }, {
-                172: {
+                "211.81.20.100": {
+                    "name": "天津市教委信息中心"
+                }
+            }, {
+                "211.81.21.12": {
+                    "name": "天津市教委信息中心"
+                }
+            }, {
+                "10.10.100.58": {
+                    "name": "天津科技大学"
+                }
+            }, {
+                "59.67.65.26": {
+                    "name": "天津师范大学"
+                }
+            }, {
+                "115.24.185.2": {
+                    "name": "天津师范大学"
+                }
+            }, {
+                "222.30.102.236": {
+                    "name": "天津职业学院"
+                }
+            }, {
+                "211.68.230.34": {
+                    "name": "天津职业学院"
+                }
+            }, {
+                "211.68.118.1": {
+                    "name": "天津工业大学"
+                }
+            },{
+                "202.113.88.144": {
+                    "name": "天津城建大学"
+                }
+            },{
+                "172.20.128.1": {
                     "name": "天津理工大学"
                 }
-            }, {
-                210: {
+            },{
+                "210.31.144": {
+                    "name": "天津市教委"
+                }
+            },{
+                "210.31.151": {
                     "name": "天津市教委"
                 }
             }];
@@ -91,6 +132,7 @@
             this.path.from = fixedFromName;
             this.path.to = fixedToName;
 
+            console.log(fixedFromName, fixedToName)
         }
     };
 
@@ -101,13 +143,24 @@
         for (var i = 0, l = mapping.length; i < l; i++) {
             var item = mapping[i];
             for (var key in item) {
-                if (key.toLowerCase() === from.toLowerCase()) {
+                if (key.toLowerCase() === from.toLowerCase() || key.toLowerCase().indexOf(from.toLowerCase()) >= 0) {
                     ret = item[key]['name'];
                     flag = true;
                     break;
                 }
             }
             if (flag) break;
+        }
+
+        if (!flag) {
+            // 处理特殊情况
+            var prefix = "210.31";
+            if (from.substring(0,6).indexOf(prefix) >= 0) {
+                var arr = from.split('.');
+                if (~~arr[2] >= 144 && ~~arr[2] <= 151) {
+                    ret = '天津市教委';
+                }
+            }
         }
         return ret;
     }
@@ -130,6 +183,11 @@
                 "coords": [117.115746, 39.077202]
             }
         }, {
+            "TJTC": {
+                "name": "天津市教委信息中心",
+                "coords": [117.15955, 39.099785]
+            }
+        }, {
             "TJU": {
                 "name": "天津大学",
                 "coords": [117.181503, 39.114877]
@@ -150,6 +208,18 @@
                 "coords": [117.359348, 39.112904]
             }
         }, {
+            "TUST": {
+                "name": "天津科技大学",
+                "coords": [117.278097, 39.077101]
+            }
+        },
+        {
+            "TJ": {
+                "name": "天津市教委信息中心",
+                "coords": [117.15955, 39.099785]
+            }
+        },
+        {
             "TJ": {
                 "name": "天津市教委",
                 "coords": [117.21702, 39.118572]

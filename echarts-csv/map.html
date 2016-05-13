@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="./css/map.css">
+</head>
+
+<body>
+    <div id="main"></div>
+    <div class="tooltip-box">
+        <div class="tooltip-box-header">
+            <div class="close">x</div>
+        </div>
+        <div class="tooltip-box-body"></div>
+    </div>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script src="node_modules/echarts/map/js/china.js"></script>
+    <script>
+    $(function() {
+        var APP = {
+            chart: null,
+            WIDTH: 800,
+            HEIGHT: 600,
+            TITLE: '地图标题',
+            SUB_TITLE: '地图子标题',
+            SERIES_NAME: '序列标题',
+            FILE_TO_READ: 'basic',
+            NEED_TO_MERGE: !0,
+            MERGE_FILE: 'history',
+            MERGE_KEY: '病案号',
+            FILE_PATH: {
+                'history': 'output/DeseaseHistory.json',
+                'basic': 'output/BasicInfo.json',
+                'district': 'output/AdministrativeArea.json',
+                'AC': 'output/ArchivesCases.json',
+                'DF': 'output/DangerFactors.json',
+                'GB': 'output/GB_native.json'
+            },
+            cache: {},
+            init: function() {
+                var $dom = $('#main');
+                var dom = $dom[0];
+
+                $dom.css({
+                    width: APP.WIDTH + 'px',
+                    height: APP.HEIGHT + 'px'
+                });
+
+                $('.tooltip-box .tooltip-box-header .close').on('click', function (){
+                    $('.tooltip-box').hide();
+                });
+                this.chart = echarts.init(dom);
+                this.loadDataAsync(this.FILE_TO_READ);
+            },
+            loadDataAsync: function(fileName) {
+                var _this_ = this;
+                getFile(fileName, function(data) {
+
+                    var json;
+                    if (APP.NEED_TO_MERGE) {
+                        var cached = JSON.parse(data);
+                        getFile(APP.MERGE_FILE, function(ext_data) {
+                            var extJSON = JSON.parse(ext_data);
+                            json = _this_.mergeData(cached, extJSON, APP.MERGE_KEY)
+
+                            json = _this_.proccessData(json);
+
+                            _this_.render(json);
+                        })
+                    } else {
+                        json = _this_.proccessData(data);
+                        _this_.render(json);
+                    }
+
+
+                });
+            },
+            mergeData: function(a, b, key) {
+                var list = [];
+                var cacheA = {},
+                    cacheB = {};
+
+                a.forEach(function(it) {
+                    cacheA[it[key]] = it;
+                });
+
+                b.forEach(function(it) {
+                    cacheB[it[key]] = it;
+                });
+
+
+                var map = {};
+                for (var keya in cacheA) {
+                    if (keya in cacheB) {
+                        list.push($.extend({}, cacheA[keya], cacheB[keya]))
+                        map[keya] = true;
+                    }
+                }
+
+                for (var keyb in cacheB) {
+                    if (!map[keyb]) {
+                        list.push(cacheB[keyb]);
+                    }
+                }
+
+
+                return list;
+            },
+            proccessData: function(rawData) {
+                // 数据处理
+                var parsed = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+
+                var target = {
+                    '既往脑卒中':[],
+                    '既往短暂性脑缺血发作TIA':[],
+                    '高危':[],
+                    '中危':[],
+                    '低危':[]
+                };
+
+                parsed.forEach(function (item){
+                    if ('有' === item['既往脑卒中'])target['既往脑卒中'].push(item);
+                    if ('有' === item['既往短暂性脑缺血发作TIA'])target['既往短暂性脑缺血发作TIA'].push(item);
+
+                    if ('高危' === item['危险级']) target['高危'].push(item);
+                    if ('中危' === item['危险级']) target['中危'].push(item);
+                    if ('低危' === item['危险级']) target['低危'].push(item);
+                })
+
+                APP.cache['proccessData'] = target;
+
+                return target;
+
+            },
+            displayCityInfo : function (cityName) {
+                var cityList = findCitiesByAreaName(cityName, APP.getScatterJSON());
+                var json = cityList2JSON(cityList)
+                var result = APP.buildTooltipFormatter(json);
+
+                $('.tooltip-box-body').html(result.join('<br />'));
+                $('.tooltip-box').show();
+            },
+            render: function(json) {
+                var option = getChartOption(json);
+                var _this_ = this;
+
+                var fn = function (){
+                    APP.chart.setOption(option);
+                };
+
+                fn();
+
+                APP.chart.on('mouseover', function () {
+                    var _args = arguments;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(function (){
+                        _this_.renderScatter(json, _args[0].name);
+                    }, 500)
+                })
+
+                var timeout;
+                APP.chart.on('mouseout', function (){
+                    clearTimeout(timeout);
+                    timeout = setTimeout(fn, 500)
+                    //APP.chart.setOption(option);
+                });
+
+                APP.chart.on('click', function () {
+                    APP.displayCityInfo(arguments[0].name);
+                });
+            },
+            getScatterJSON : function () {
+                return APP.cache['proccessData'];
+            },
+            buildTooltipFormatter : function (json) {
+                var result = [];
+                for (var c in json) {
+                    var r = json[c];
+                    var tpl = '';
+                    var sum = 0;
+                    for (var attr in r) {
+                        sum += r[attr];
+                        tpl += attr + ' : ' + r[attr] + ' <br />';
+                    }
+                    result.push(c);
+                    result.push(tpl);
+                    result.push('总数：' + sum + '<br />');
+                }
+                return result;
+            },
+            renderScatter : function (json, currentCityName) {
+                json = json || {};
+                var geoCoordMap = getGEOCoordMap();
+
+                var convertData = function (data) {
+                    var res = [];
+                    for (var i = 0; i < data.length; i++) {
+                        var geoCoord = geoCoordMap[data[i].name];
+                        if (geoCoord) {
+                            res.push({
+                                name: data[i].name,
+                                value: geoCoord.concat(data[i].value)
+                            });
+                        }
+                    }
+                    return res;
+                };
+
+                var getCityJSON = function (cityName) {
+                    var cityList = findCitiesByAreaName(cityName, APP.getScatterJSON());
+                    var json = cityList2JSON(cityList)
+                    return json;
+                };
+
+                var cityData = (function (){
+                    var cityList = findCitiesByAreaName(currentCityName, APP.getScatterJSON());
+                    var json = cityList2JSON(cityList);
+                    var list = [];
+                    for (var city in json) {
+                        var sum = 0;
+                        var d = json[city];
+                        for (var attr in d) {
+                            sum += d[attr] || 0;
+                        }
+                        list.push({
+                            name : city,
+                            value : sum
+                        });
+                    }
+
+                    return list;
+                })();
+
+                var legendData = Object.keys(APP.cache['proccessData']);
+
+                var option = {
+                    title: {
+                        text: APP.TITLE,
+                        subtext: APP.SUB_TITLE,
+                        x:'center'
+                    },
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: function (params) {
+                            var json = getCityJSON(params.name);
+
+                            var result = APP.buildTooltipFormatter(json);
+
+                            return result.join('<br />');
+                        }
+                    },
+                    legend: {
+                        orient: 'vertical',
+                        y: 'bottom',
+                        x:'right',
+                        data:legendData
+                    },
+                    dataRange: {
+                        min: 0,
+                        max: 100,
+                        color: ['red','yellow','green'],
+                        symbolSize: [30, 100]
+                    },
+                    geo: {
+                        map: 'china',
+                        label: {
+                            emphasis: {
+                                show: false
+                            }
+                        },
+                        itemStyle: {
+                            normal: {
+                                areaColor: '#323c48',
+                                borderColor: '#111'
+                            },
+                            emphasis: {
+                                areaColor: '#2a333d'
+                            }
+                        }
+                    },
+                    series: [
+                        {
+                            name: APP.TITLE,
+                            type: 'scatter',
+                            coordinateSystem: 'geo',
+                            data: convertData(cityData),
+                            symbolSize: 20,
+                            label: {
+                                normal: {
+                                    show: false
+                                },
+                                emphasis: {
+                                    show: false
+                                }
+                            },
+                            itemStyle: {
+                                emphasis: {
+                                    borderColor: '#fff',
+                                    borderWidth: 1
+                                }
+                            }
+                        }
+                    ]
+                };
+
+                APP.chart.setOption(option);
+            }
+        };
+
+        function cityList2JSON (list) {
+            var ret = {};
+            var legendData = ['既往脑卒中', '既往短暂性脑缺血发作TIA', '高危', '中危', '低危'];
+            list.forEach(function (item){
+                for (var cityName in item) {
+
+                    if (!ret[cityName]) ret[cityName] = {};
+
+                    var current = item[cityName],i;
+
+                    for (i = 0, l = legendData.length; i < l; i++) {
+                        var x = legendData[i];
+                        if (!ret[cityName][x])ret[cityName][x] = 0; 
+                    }
+
+
+                    if ('有' === current['既往脑卒中'])ret[cityName]['既往脑卒中']++;
+                    if ('有' === current['既往短暂性脑缺血发作TIA'])ret[cityName]['既往短暂性脑缺血发作TIA']++;
+
+                    if ('高危' === current['危险级']) ret[cityName]['高危']++;
+                    if ('中危' === current['危险级']) ret[cityName]['中危']++;
+                    if ('低危' === current['危险级']) ret[cityName]['低危']++;
+                }
+            });
+            return ret;
+        }
+
+        function getChartOption(json) {
+            var legendData = [];
+            var seriesData = [];
+            var map = {};
+
+            var xData = ['既往脑卒中', '既往短暂性脑缺血发作TIA', '高危', '中危', '低危']
+
+            for (var i = 0, l = xData.length; i < l; i++) {
+                var key = xData[i];
+                map[key] = {};
+            }
+            legendData.push(xData[0]);
+
+            for (var attr in json) {
+                //legendData.push(attr);
+
+                var list = json[attr];
+
+                list.forEach(function(item) {
+                    var city = parseCityName(item);
+
+                    xData.forEach(function (x){
+                        if (!map[x][city])map[x][city]=0;
+                    })
+
+                    if ('有' === item['既往脑卒中']) map['既往脑卒中'][city]++;
+
+                    if ('有' === item['既往短暂性脑缺血发作TIA']) map['既往短暂性脑缺血发作TIA'][city]++;
+
+                    if ('高危' === item['危险级'])map['高危'][city]++;
+                    
+                    if ('中危' === item['危险级'])map['中危'][city]++;
+
+                    if ('低危' === item['危险级'])map['低危'][city]++;
+                });
+
+                var tplData = [];
+                var currentType = map[attr];
+                for (var city in currentType) {
+                    var sum = getSum(city, map);
+                    var cityCount = map['既往脑卒中'][city] || 0;
+                    var cr = getColorRange(cityCount, sum);
+                    tplData.push({
+                        name : city,
+                        value : cr
+                    });
+                }
+                
+
+                var tpl = {
+                    name: attr,
+                    type: 'map',
+                    mapType: 'china',
+                    roam: false,
+                    label: {
+                        normal: {
+                            show: true
+                        },
+                        emphasis: {
+                            show: true
+                        }
+                    },
+                    data: tplData
+                }
+
+                seriesData.push(tpl);
+            }
+
+
+            var option = {
+                title: {
+                    text: APP.TITLE,
+                    subtext: APP.SUB_TITLE,
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item'
+                },
+                legend: {
+                    orient: 'vertical',
+                    x: 'right',
+                    y: 'bottom',
+                    data: legendData
+                },
+                visualMap: {
+                    min: 0,
+                    max: 100,
+                    left: 'left',
+                    top: 'bottom',
+                    text: ['高', '低'], // 文本，默认为数值文本
+                    calculable: true,
+                    inRange: {
+                        color: ['green', 'yellow' , 'red']
+                    }
+                },
+                geo: {
+                    map: 'china',
+                    label: {
+                        emphasis: {
+                            show: false
+                        }
+                    },
+                    itemStyle: {
+                        normal: {
+                            areaColor: '#323c48',
+                            borderColor: '#111'
+                        },
+                        emphasis: {
+                            areaColor: '#2a333d'
+                        }
+                    }
+                },
+                toolbox: {
+                    show: true,
+                    orient: 'vertical',
+                    left: 'right',
+                    top: 'center',
+                    feature: {
+                        dataView: {
+                            readOnly: false
+                        },
+                        restore: {},
+                        saveAsImage: {}
+                    }
+                },
+                series: seriesData
+            };
+
+
+            return option;
+        }
+
+
+        function getFile(fileName, cb) {
+            if (!!APP.cache[fileName]) {
+                cb && cb(APP.cache[fileName]);
+            } else {
+                $.ajax({
+                    type: 'get',
+                    dataType: 'text',
+                    url: APP.FILE_PATH[fileName],
+                    success: function(content) {
+                        APP.cache[fileName] = content;
+                        cb && cb(content);
+                    }
+                });
+            }
+        };
+
+        function getColorRange (cnt, sum) {
+            return cnt;
+            if (sum > 0) {
+                var p = parseFloat(cnt / sum);
+                if (p > 0.03) {
+                    return 100
+                } else if (p > 0.1) {
+                    return 50
+                } else {
+                    return 0
+                }
+            } else {
+                return 0;
+            }
+        }
+
+        function getSum (city, map) {
+            var sum = 0;
+            for (var attr in map) {
+                var current = map[attr];
+                if (city in current) {
+                    sum += current[city];
+                }
+            }
+
+            return sum;
+        }
+
+        function getCityStartPos (area) {
+            var start = 2;
+            if (area.indexOf('省') >= 0) {
+                start = area.indexOf('省')+1;
+            } else if (area.indexOf('区')) {
+                start = area.indexOf('区')+1;
+            }
+
+            return start;
+        }
+
+        function parseCityName (item) {
+            var area = item['行政区划'];
+            return area.substring(0, 2);
+        }
+
+        function findCitiesByAreaName (areaName, json) {
+            var target = [];
+            for (var attr in json) {
+                var list = json[attr];
+                list.forEach(function (item){
+                    var currentArea = item['行政区划'].substring(0,2);
+                    if (currentArea === areaName) {
+                        target.push(item);
+                    }
+                });
+            }
+
+            var targetList = [];
+            target.forEach(function (item){
+                var area = item['行政区划'];
+                var start = getCityStartPos(area);
+                var end = area.indexOf('市');
+
+                if (start>end)start=2;
+                var city = area.substring(start, end);
+
+                var newItem = {};
+                newItem[city] = item;
+                targetList.push(newItem);
+            });
+
+            return targetList;
+        }
+
+        function getGEOCoordMap () {
+            var map = {
+                "海门":[121.15,31.89],
+                "鄂尔多斯":[109.781327,39.608266],
+                "招远":[120.38,37.35],
+                "舟山":[122.207216,29.985295],
+                "齐齐哈尔":[123.97,47.33],
+                "盐城":[120.13,33.38],
+                "赤峰":[118.87,42.28],
+                "青岛":[120.33,36.07],
+                "乳山":[121.52,36.89],
+                "金昌":[102.188043,38.520089],
+                "泉州":[118.58,24.93],
+                "莱西":[120.53,36.86],
+                "日照":[119.46,35.42],
+                "胶南":[119.97,35.88],
+                "南通":[121.05,32.08],
+                "拉萨":[91.11,29.97],
+                "云浮":[112.02,22.93],
+                "梅州":[116.1,24.55],
+                "文登":[122.05,37.2],
+                "上海":[121.48,31.22],
+                "攀枝花":[101.718637,26.582347],
+                "威海":[122.1,37.5],
+                "承德":[117.93,40.97],
+                "厦门":[118.1,24.46],
+                "汕尾":[115.375279,22.786211],
+                "潮州":[116.63,23.68],
+                "丹东":[124.37,40.13],
+                "太仓":[121.1,31.45],
+                "曲靖":[103.79,25.51],
+                "烟台":[121.39,37.52],
+                "福州":[119.3,26.08],
+                "瓦房店":[121.979603,39.627114],
+                "即墨":[120.45,36.38],
+                "抚顺":[123.97,41.97],
+                "玉溪":[102.52,24.35],
+                "张家口":[114.87,40.82],
+                "阳泉":[113.57,37.85],
+                "莱州":[119.942327,37.177017],
+                "湖州":[120.1,30.86],
+                "汕头":[116.69,23.39],
+                "昆山":[120.95,31.39],
+                "宁波":[121.56,29.86],
+                "湛江":[110.359377,21.270708],
+                "揭阳":[116.35,23.55],
+                "荣成":[122.41,37.16],
+                "连云港":[119.16,34.59],
+                "葫芦岛":[120.836932,40.711052],
+                "常熟":[120.74,31.64],
+                "东莞":[113.75,23.04],
+                "河源":[114.68,23.73],
+                "淮安":[119.15,33.5],
+                "泰州":[119.9,32.49],
+                "南宁":[108.33,22.84],
+                "营口":[122.18,40.65],
+                "惠州":[114.4,23.09],
+                "江阴":[120.26,31.91],
+                "蓬莱":[120.75,37.8],
+                "韶关":[113.62,24.84],
+                "嘉峪关":[98.289152,39.77313],
+                "广州":[113.23,23.16],
+                "延安":[109.47,36.6],
+                "太原":[112.53,37.87],
+                "清远":[113.01,23.7],
+                "中山":[113.38,22.52],
+                "昆明":[102.73,25.04],
+                "寿光":[118.73,36.86],
+                "盘锦":[122.070714,41.119997],
+                "长治":[113.08,36.18],
+                "深圳":[114.07,22.62],
+                "珠海":[113.52,22.3],
+                "宿迁":[118.3,33.96],
+                "咸阳":[108.72,34.36],
+                "铜川":[109.11,35.09],
+                "平度":[119.97,36.77],
+                "佛山":[113.11,23.05],
+                "海口":[110.35,20.02],
+                "江门":[113.06,22.61],
+                "章丘":[117.53,36.72],
+                "肇庆":[112.44,23.05],
+                "大连":[121.62,38.92],
+                "临汾":[111.5,36.08],
+                "吴江":[120.63,31.16],
+                "石嘴山":[106.39,39.04],
+                "沈阳":[123.38,41.8],
+                "苏州":[120.62,31.32],
+                "茂名":[110.88,21.68],
+                "嘉兴":[120.76,30.77],
+                "长春":[125.35,43.88],
+                "胶州":[120.03336,36.264622],
+                "银川":[106.27,38.47],
+                "张家港":[120.555821,31.875428],
+                "三门峡":[111.19,34.76],
+                "锦州":[121.15,41.13],
+                "南昌":[115.89,28.68],
+                "柳州":[109.4,24.33],
+                "三亚":[109.511909,18.252847],
+                "自贡":[104.778442,29.33903],
+                "吉林":[126.57,43.87],
+                "阳江":[111.95,21.85],
+                "泸州":[105.39,28.91],
+                "西宁":[101.74,36.56],
+                "宜宾":[104.56,29.77],
+                "呼和浩特":[111.65,40.82],
+                "成都":[104.06,30.67],
+                "大同":[113.3,40.12],
+                "镇江":[119.44,32.2],
+                "桂林":[110.28,25.29],
+                "张家界":[110.479191,29.117096],
+                "宜兴":[119.82,31.36],
+                "北海":[109.12,21.49],
+                "西安":[108.95,34.27],
+                "金坛":[119.56,31.74],
+                "东营":[118.49,37.46],
+                "牡丹江":[129.58,44.6],
+                "遵义":[106.9,27.7],
+                "绍兴":[120.58,30.01],
+                "扬州":[119.42,32.39],
+                "常州":[119.95,31.79],
+                "潍坊":[119.1,36.62],
+                "重庆":[106.54,29.59],
+                "台州":[121.420757,28.656386],
+                "南京":[118.78,32.04],
+                "滨州":[118.03,37.36],
+                "贵阳":[106.71,26.57],
+                "无锡":[120.29,31.59],
+                "本溪":[123.73,41.3],
+                "克拉玛依":[84.77,45.59],
+                "渭南":[109.5,34.52],
+                "马鞍山":[118.48,31.56],
+                "宝鸡":[107.15,34.38],
+                "焦作":[113.21,35.24],
+                "句容":[119.16,31.95],
+                "北京":[116.46,39.92],
+                "徐州":[117.2,34.26],
+                "衡水":[115.72,37.72],
+                "包头":[110,40.58],
+                "绵阳":[104.73,31.48],
+                "乌鲁木齐":[87.68,43.77],
+                "枣庄":[117.57,34.86],
+                "杭州":[120.19,30.26],
+                "淄博":[118.05,36.78],
+                "鞍山":[122.85,41.12],
+                "溧阳":[119.48,31.43],
+                "库尔勒":[86.06,41.68],
+                "安阳":[114.35,36.1],
+                "开封":[114.35,34.79],
+                "济南":[117,36.65],
+                "德阳":[104.37,31.13],
+                "温州":[120.65,28.01],
+                "九江":[115.97,29.71],
+                "邯郸":[114.47,36.6],
+                "临安":[119.72,30.23],
+                "兰州":[103.73,36.03],
+                "沧州":[116.83,38.33],
+                "临沂":[118.35,35.05],
+                "南充":[106.110698,30.837793],
+                "天津":[117.2,39.13],
+                "富阳":[119.95,30.07],
+                "泰安":[117.13,36.18],
+                "诸暨":[120.23,29.71],
+                "郑州":[113.65,34.76],
+                "哈尔滨":[126.63,45.75],
+                "聊城":[115.97,36.45],
+                "芜湖":[118.38,31.33],
+                "唐山":[118.02,39.63],
+                "平顶山":[113.29,33.75],
+                "邢台":[114.48,37.05],
+                "德州":[116.29,37.45],
+                "济宁":[116.59,35.38],
+                "荆州":[112.239741,30.335165],
+                "宜昌":[111.3,30.7],
+                "义乌":[120.06,29.32],
+                "丽水":[119.92,28.45],
+                "洛阳":[112.44,34.7],
+                "秦皇岛":[119.57,39.95],
+                "株洲":[113.16,27.83],
+                "石家庄":[114.48,38.03],
+                "莱芜":[117.67,36.19],
+                "常德":[111.69,29.05],
+                "保定":[115.48,38.85],
+                "湘潭":[112.91,27.87],
+                "金华":[119.64,29.12],
+                "岳阳":[113.09,29.37],
+                "长沙":[113,28.21],
+                "衢州":[118.88,28.97],
+                "廊坊":[116.7,39.53],
+                "菏泽":[115.480656,35.23375],
+                "合肥":[117.27,31.86],
+                "武汉":[114.31,30.52],
+                "大庆":[125.03,46.58]
+            };
+            return map;
+        }
+
+
+
+        APP.init();
+    });
+    </script>
+</body>
+
+</html>

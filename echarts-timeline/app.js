@@ -10,10 +10,15 @@ $(window).load(function() {
                 var el = data[i];
                 var obj = new WifiVO({
                     id: el.id,
-                    username: el.username,
+                    username: $.trim(el.username),
+                    macadd: el.macadd,
                     ipadd: el.ipadd,
+                    nasip: $.trim(el.nasip),
                     stime: el.stime,
                     etime: el.etime,
+                    inflow: el.inflow,
+                    outflow: el.outflow,
+                    allflow: el.allflow,
                     onlinetime: el.onlinetime
                 });
                 voList.push(obj);
@@ -47,16 +52,39 @@ $(window).load(function() {
     var convertData = function(data) {
         var res = [];
         for (var i = 0; i < data.length; i++) {
-            var dataItem = data[i];
-            var fromCoord = geoCoordMap[dataItem[0].name];
-            var toCoord = geoCoordMap[dataItem[1].name];
-            if (fromCoord && toCoord) {
-                res.push([{
-                    coord: fromCoord
-                }, {
-                    coord: toCoord
-                }]);
-            }
+            (function (i){
+                var dataItem = data[i];
+                var fromCoord = geoCoordMap[dataItem[0].name];
+                var toCoord = geoCoordMap[dataItem[1].name];
+                if (fromCoord && toCoord) {
+                    res.push([{
+                        coord: fromCoord,
+                        tooltip: { // 让鼠标悬浮到此项时能够显示 `tooltip`。
+                                formatter: function(params) {
+                                    var ret = [];
+                                    ret.push('用户名：'+dataItem[1].username);
+                                    ret.push('');
+                                    ret.push('起点 / 终点');
+                                    ret.push(dataItem[0].name +' 到 ' +dataItem[1].name);
+                                    ret.push('');
+                                    ret.push('起始时间 / 结束时间');
+                                    ret.push(dataItem[0].stime + ' 至 ' + dataItem[0].stime);
+                                    ret.push('在线时长：' + dataItem[1].onlinetime);
+                                    ret.push('');
+                                    ret.push('MAC地址：' + dataItem[1].macadd);
+                                    ret.push('');
+                                    ret.push('流入流量 / 流出流量');
+                                    ret.push(dataItem[1].inflow + ' / ' + dataItem[1].outflow);
+                                    ret.push('总流量：' + dataItem[1].allflow);
+
+                                    return ret.join('<br />');
+                                }
+                            }
+                    }, {
+                        coord: toCoord
+                    }]);
+                }
+            })(i);
         }
         return res;
     };
@@ -130,7 +158,7 @@ $(window).load(function() {
                         show: true,
                         period: 6,
                         trailLength: 0,
-                        symbol: planePath,
+                        symbol: 'circle',
                         symbolSize: 15
                     },
                     lineStyle: {
@@ -142,7 +170,7 @@ $(window).load(function() {
                         }
                     },
                     data: convertData(item[1])
-                }, {
+                },{
                     name: item[0],
                     type: 'effectScatter',
                     coordinateSystem: 'geo',
@@ -168,20 +196,24 @@ $(window).load(function() {
                     data: item[1].map(function(dataItem) {
                         return {
                             name: dataItem[1].name,
-                            value: geoCoordMap[dataItem[1].name].concat([dataItem[1].value]),
+                            value: (geoCoordMap[dataItem[1].name]||geoCoordMap["天津商业大学"]).concat([dataItem[1].value]),
                             tooltip: { // 让鼠标悬浮到此项时能够显示 `tooltip`。
                                 formatter: function(params) {
                                     var ret = [];
-                                    ret.push('起点：');
-                                    ret.push(dataItem[0].name);
-                                    ret.push('终点：');
-                                    ret.push(dataItem[1].name);
-                                    ret.push('起始时间：');
-                                    ret.push(dataItem[0].stime);
-                                    ret.push('结束时间：');
-                                    ret.push(dataItem[1].etime);
-                                    ret.push('在线时长：');
-                                    ret.push(dataItem[1].online);
+                                    ret.push('用户名：'+dataItem[1].username);
+                                    ret.push('');
+                                    ret.push('起点 / 终点');
+                                    ret.push(dataItem[0].name +' 到 ' +dataItem[1].name);
+                                    ret.push('');
+                                    ret.push('起始时间 / 结束时间');
+                                    ret.push(dataItem[0].stime + ' 至 ' + dataItem[0].stime);
+                                    ret.push('在线时长：' + dataItem[1].onlinetime);
+                                    ret.push('');
+                                    ret.push('MAC地址：' + dataItem[1].macadd);
+                                    ret.push('');
+                                    ret.push('流入流量 / 流出流量');
+                                    ret.push(dataItem[1].inflow + ' / ' + dataItem[1].outflow);
+                                    ret.push('总流量：' + dataItem[1].allflow);
 
                                     return ret.join('<br />');
                                 }
@@ -423,6 +455,7 @@ $(window).load(function() {
                 }
             },
             tooltip: {
+                position: ["50%", "50%"],
                 trigger: 'item'
             },
             legend: {
@@ -494,6 +527,7 @@ $(window).load(function() {
                         period: 6,
                         trailLength: 0.7,
                         color: '#fff',
+                        symbol: "circle",
                         symbolSize: 3
                     },
                     lineStyle: {
@@ -510,7 +544,7 @@ $(window).load(function() {
                         show: true,
                         period: 6,
                         trailLength: 0,
-                        symbol: planePath,
+                        symbol: "circle",
                         symbolSize: 15
                     },
                     lineStyle: {
@@ -597,8 +631,13 @@ $(window).load(function() {
             // to 
             arr.push({
                 name: item.path.to,
+                username: item.username,
                 etime: item.etime,
-                online: item.onlinetime,
+                macadd: item.macadd,
+                inflow: item.inflow,
+                onlinetime: item.onlinetime,
+                outflow: item.outflow,
+                allflow: item.allflow,
                 value: 100
             });
             ret.push(arr);

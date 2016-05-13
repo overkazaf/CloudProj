@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="main"></div>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="node_modules/echarts/dist/echarts.min.js"></script>
+    <script>
+    $(function() {
+        var APP = {
+            chart: null,
+            WIDTH: 800,
+            HEIGHT: 600,
+            TITLE: '饼图标题',
+            SUB_TITLE: '饼图子标题',
+            SERIES_NAME: '序列标题',
+            FILE_TO_READ : 'basic',
+            FILE_PATH: {
+                'history': 'output/DeseaseHistory.json',
+                'basic': 'output/BasicInfo.json',
+                'district': 'output/AdministrativeArea.json',
+                'AC': 'output/ArchivesCases.json',
+                'DF': 'output/DangerFactors.json',
+                'GB': 'output/GB_native.json'
+            },
+            cache: {},
+            init: function() {
+            	var $dom = $('#main');
+                var dom = $dom[0];
+
+                $dom.css({
+                	width : APP.WIDTH + 'px',
+                	height : APP.HEIGHT + 'px'
+                });
+                this.chart = echarts.init(dom);
+                this.loadDataAsync(this.FILE_TO_READ);
+            },
+            loadDataAsync: function(fileName) {
+                var _this_ = this;
+                getFile(fileName, function(data) {
+                    var json = _this_.proccessData(data);
+                    _this_.render(json);
+                });
+            },
+            proccessData: function(rawData) {
+                // 数据处理
+                var parsed = JSON.parse(rawData);
+
+                var notLows = parsed.filter(function(item) {
+                    return item['危险级'] != '低危';
+                });
+
+                var target = {};
+                
+                notLows.forEach(function(item) {
+                    if (!target[item['民族']]){
+                        target[item['民族']] = [];
+                    }
+                    target[item['民族']].push(1);
+                });
+
+                for (var key in target) {
+                    target[key] = target[key].length;
+                }
+
+                return target;
+
+            },
+            render: function(json) {
+                var option = getChartOption(json);
+                APP.chart.setOption(option);
+            }
+        };
+
+        function getChartOption(json) {
+            var legendData = [];
+            var seriesData = [];
+
+            for (var attr in json) {
+                legendData.push(attr);
+                seriesData.push({
+                    name: attr,
+                    value: json[attr]
+                });
+            }
+            var option = {
+                title: {
+                    text: APP.TITLE,
+                    x: 'center'
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: "{a} <br/>{b} : {c} ({d}%)"
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    data: legendData
+                },
+                series: [{
+                    name: APP.SERIES_NAME,
+                    type: 'pie',
+                    radius: '55%',
+                    center: ['50%', '60%'],
+                    data: seriesData,
+                    itemStyle: {
+                        emphasis: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            };
+
+            return option;
+        }
+
+
+        function getFile(fileName, cb) {
+            if (!!APP.cache[fileName]) {
+                cb && cb(APP.cache[fileName]);
+            } else {
+                $.ajax({
+                    type: 'get',
+                    dataType: 'text',
+                    url: APP.FILE_PATH[fileName],
+                    success: function(content) {
+                        APP.cache[fileName] = content;
+                        cb && cb(content);
+                    }
+                });
+            }
+        };
+
+
+        APP.init();
+    });
+    </script>
+</body>
+
+</html>
