@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+	<style type="text/css">
+		#main {
+			position: relative;
+			margin: 20px auto;
+			width: 800px;
+			height: 600px;
+		}
+		#title {
+			position: relative;
+			margin: 0 auto;
+			text-align: center;
+		}
+	</style>
+</head>
+<body>
+	<div id="title">
+		<h2>知乎Top N用户数据统计展示</h2>
+	</div>
+	<div id="main"></div>
+	<script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>
+	<script type="text/javascript" src="node_modules/echarts/dist/echarts.min.js"></script>
+	<script type="text/javascript">
+		$(function () {
+			var APP = {
+				cache : {},
+				FILE_PATHS : {
+					'data' : './data/data.json'
+				},
+				DEBUG : true,
+				LOAD_LOCAL_FILE : true,
+				log : function (k, v){
+					if (APP.DEBUG) {
+						if (window.console & console.log) {
+							if (arguments.length === 1) {
+								console.log(k);
+							} else {
+								console.log(k, v);
+							}
+						}
+					}
+				},
+				containerID : '#main',
+				chartEl : null,
+				init : function () {
+					APP.chartEl = echarts.init($(APP.containerID)[0]);
+
+					getData(function (data){
+						
+						var json = APP.proccessData(data);
+						APP.renderChart(json);
+					});
+				},
+				proccessData : function (data) {
+					var ret = [],
+						keys = ['agrees', 'answers', 'asks', 'followers'];
+
+					data.forEach(function (item){
+						var sum = 0;
+						keys.forEach(function (key){
+							sum += +item[key];
+						});
+
+						var newObj = {};
+						newObj['id'] = item['id'];
+						newObj['name'] = item['name'];
+						newObj['sum'] = sum;
+						newObj['agrees'] = (+item['agrees']);
+						newObj['followers'] = (+item['followers']);
+						newObj['asks'] = (+item['asks']);
+						newObj['answers'] = (+item['answers']);
+						ret.push(newObj);
+					});
+					ret.sort(function (a, b){
+						return b['sum'] - a['sum'];
+					});
+					return ret;
+				},
+				getChartOption : function (data) {
+					var keyMap = {
+				    	'agrees' : '赞同',
+				    	'answers' : '回答',
+				    	'asks' : '提问',
+				    	'followers' : '跟随'
+				    };
+				    var legends = {
+				    	'Top10':10, 
+				    	'Top30':30,
+				    	'Top50':50,
+				    	'Top100':100
+				    };
+					var dataMap = {};
+					var maxAsk = 0;
+					var maxAns = 0;
+					var maxAgrees = 0;
+					var maxFollow = 0;
+					data.forEach(function (item){
+						for (var key in legends) {
+							if (!dataMap[key]) {
+								dataMap[key] = [];
+							}
+							var temp = [
+								+item['agrees'],
+								+item['answers'],
+								+item['asks'],
+								+item['followers'],
+								+item['sum'],
+								item['name']
+							];
+							if (dataMap[key].length < legends[key]){
+								switch (key) {
+									case 'Top10':
+										if (dataMap[key].length < 10)
+											dataMap[key].push(temp);
+										break;
+									case 'Top30':
+										if (dataMap['Top10'].length == 10 && dataMap[key].length < 30)
+											dataMap[key].push(temp);
+										break;
+									case 'Top50':
+										if (dataMap['Top30'].length == 30 && dataMap[key].length < 50)
+											dataMap[key].push(temp);
+										break;
+									case 'Top100':
+										if (dataMap['Top50'].length == 50 && dataMap[key].length < 100)
+											dataMap[key].push(temp);
+										break;
+									default:
+										dataMap[key].push(item);
+								}
+							}
+						}
+						if (+item['asks'] > maxAsk) {
+							maxAsk = +item['asks'];
+						}
+
+						if (+item['answers'] > maxAns) {
+							maxAns = +item['answers'];
+						}
+
+						if (+item['agrees'] > maxAgrees) {
+							maxAgrees = +item['agrees'];
+						}
+
+						if (+item['followers'] > maxFollow) {
+							maxFollow = +item['followers'];
+						}
+					});
+
+					var schema = [
+					    {name: 'agrees', index: 0, text: '赞同'},
+					    {name: 'answers', index: 1, text: '回答'},
+					    {name: 'asks', index: 2, text: '提问'},
+					    {name: 'followers', index: 3, text: '跟随'},
+					    {name: 'sum', index: 4, text: '总数'},
+					    {name: 'name', index: 5, text: '名字'}
+					];
+
+					var itemStyle = {
+					    normal: {
+					        opacity: 0.8,
+					        shadowBlur: 10,
+					        shadowOffsetX: 0,
+					        shadowOffsetY: 0,
+					        shadowColor: 'rgba(0, 0, 0, 0.5)'
+					    }
+					};
+
+					var legendData = ['agrees', 'answers', 'asks', 'followers'];
+					var seriesData = [];
+
+				    Object.keys(legends).forEach(function (key){
+
+				    	seriesData.push({
+				    		name : key,
+				    		type: 'scatter',
+				            itemStyle: itemStyle,
+				            data: dataMap[key]
+				    	});
+
+				    });
+
+					var option = {
+					    backgroundColor: '#333',
+					    color: [
+					        '#dd4444', '#fec42c', '#80F1BE', '#0099ff'
+					    ],
+					    legend: {
+					        y: 'top',
+					        data: Object.keys(legends),
+					        textStyle: {
+					            color: '#fff',
+					            fontSize: 16
+					        }
+					    },
+					    grid: {
+					        x: '10%',
+					        x2: 150,
+					        y: '18%',
+					        y2: '10%'
+					    },
+					    tooltip: {
+					        padding: 10,
+					        backgroundColor: '#222',
+					        borderColor: '#777',
+					        borderWidth: 1,
+					        formatter: function (obj) {
+					            var value = obj.value;
+					            return '<div style="border-bottom: 1px solid rgba(255,255,255,.3); font-size: 18px;padding-bottom: 7px;margin-bottom: 7px">'
+					                + ' 姓名：' + value[5]
+					                + '</div>'
+					                + schema[0].text + '：' + value[0] + '<br>'
+					                + schema[1].text + '：' + value[1] + '<br>'
+					                + schema[2].text + '：' + value[2] + '<br>'
+					                + schema[3].text + '：' + value[3] + '<br>'
+					                //+ schema[4].text + '：' + value[4] + '<br>'
+					                // + schema[5].text + '：' + value[5] + '<br>'
+					                // + schema[6].text + '：' + value[6] + '<br>'
+					                // + schema[7].text + '：' + value[7] + '<br>'
+					        }
+					    },
+					    xAxis: {
+					        type: 'value',
+					        name: '赞同',
+					        nameGap: 30,
+					        nameTextStyle: {
+					            color: '#fff',
+					            fontSize: 14
+					        },
+					        max: maxAgrees/9,
+					        splitLine: {
+					            show: false
+					        },
+					        axisLine: {
+					            lineStyle: {
+					                color: '#777'
+					            }
+					        },
+					        axisTick: {
+					            lineStyle: {
+					                color: '#777'
+					            }
+					        },
+					        axisLabel: {
+					            formatter: '{value}',
+					            textStyle: {
+					                color: '#fff'
+					            }
+					        }
+					    },
+					    yAxis: {
+					        type: 'value',
+					        name: '回答',
+					        nameLocation: 'end',
+					        nameGap: 20,
+					        nameTextStyle: {
+					            color: '#fff',
+					            fontSize: 16
+					        },
+					        max : maxAns/4,
+					        axisLine: {
+					            lineStyle: {
+					                color: '#777'
+					            }
+					        },
+					        axisTick: {
+					            lineStyle: {
+					                color: '#777'
+					            }
+					        },
+					        splitLine: {
+					            show: false
+					        },
+					        axisLabel: {
+					            textStyle: {
+					                color: '#fff'
+					            }
+					        }
+					    },
+					    visualMap: [
+					        {
+					            left: 'right',
+					            top: '10%',
+					            dimension: 2,
+					            min: 0,
+					            max: maxAsk,
+					            itemWidth: 30,
+					            itemHeight: 120,
+					            calculable: true,
+					            precision: 0.1,
+					            text: ['圆形大小：发问'],
+					            textGap: 30,
+					            textStyle: {
+					                color: '#fff'
+					            },
+					            inRange: {
+					                symbolSize: [10, 70]
+					            },
+					            outOfRange: {
+					                symbolSize: [10, 70],
+					                color: ['rgba(255,255,255,.2)']
+					            },
+					            controller: {
+					                inRange: {
+					                    color: ['#c23531']
+					                },
+					                outOfRange: {
+					                    color: ['#444']
+					                }
+					            }
+					        },
+					        {
+					            left: 'right',
+					            bottom: '5%',
+					            dimension: 3,
+					            min: 0,
+					            max: maxFollow/10,
+					            itemHeight: 120,
+					            calculable: true,
+					            precision: 0.1,
+					            text: ['明暗：跟随'],
+					            textGap: 30,
+					            textStyle: {
+					                color: '#fff'
+					            },
+					            inRange: {
+					                colorLightness: [1, 0.5]
+					            },
+					            outOfRange: {
+					                color: ['rgba(255,255,255,.2)']
+					            },
+					            controller: {
+					                inRange: {
+					                    color: ['#c23531']
+					                },
+					                outOfRange: {
+					                    color: ['#444']
+					                }
+					            }
+					        }
+					    ],
+					    series: seriesData
+					};
+
+					return option;
+				},
+				renderChart : function (json){
+					var option = APP.getChartOption(json);
+					APP.chartEl.setOption(option);
+				}
+			};
+
+			function getData (callback) {
+				getFile('data', callback);
+			}
+
+			function getFile (fileName, callback) {
+				if (APP.cache[fileName]) {
+					callback && callback(APP.cache[fileName])
+				} else {
+					$.ajax({
+						type : 'get',
+						url : APP.FILE_PATHS[fileName],
+						cache : false,
+						success : function (data){
+							APP.cache[fileName] = data;
+							callback && callback(data);
+						},
+						error : function (){
+							APP.log(arguments);
+						}
+					});
+				}
+			};
+
+
+			APP.init();
+		});
+	</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<!-- COLORS ARE NOT PERFECT YET. TOOLTIP NEEDS WORK-->
+<meta charset="utf-8">
+<head>
+<style>
+
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+#chart{
+  text-align: center;
+  width: 60%;
+  height: 700px;
+  padding: 30px;
+}
+#tooltip {
+	position: absolute;
+	right: 20px;
+	top: 20px;
+	width: 300px;
+	height: 300px;
+	padding: 20px;
+	display: none;
+}
+</style>
+</head>
+<body>
+<h2>知乎Top10统计信息</h2>
+<input id="click_1" type="radio" name="sel" value="true" checked="true">长度展现</input>
+<input id="click_2" type="radio" name="sel" value="false">角度展现</input>
+<div id='chart' ></div>
+<div id='tooltip' ></div>
+<script src="d3.v3.min.js" charset="utf-8"></script>
+<script src="clusterpurityChart.js"></script>
+
+<script>
+
+var TOP_COUNT = 10;
+var obj;
+
+d3.json('./data/data.json',function(error,data){
+  data = proccessData(data);
+  obj = d3.clusterpuritychart().containerID('chart').noOfCategories(4).fixAngleLayout(true);
+  d3.select('#chart').append('svg').datum(data).call(obj);
+});
+
+d3.select('#click_1').on('click',clickFun);
+d3.select('#click_2').on('click',clickFun);
+
+function proccessData (data) {
+	var keys = ['agrees', 'answers', 'asks', 'followers'];
+	var target = [],
+		sortFlag = false;
+	data.forEach(function (item){
+		var sum = 0;
+		keys.forEach(function (key){
+			sum += +item[key];
+		});
+
+		item['sum'] = sum;
+
+		if (target.length < TOP_COUNT) {
+			target.push(item);
+		} else if (target.length === TOP_COUNT && !sortFlag) {
+			target.sort(function (a, b){
+				return b['sum'] - a['sum'];
+			});
+			sortFlag = true;
+		} else {
+			var p = -1,
+				firstTry = true;
+			target.forEach(function (t, index){
+				if (t.sum < item.sum && firstTry) {
+					p = index;
+					firstTry = false;
+				}
+			});
+
+			if (p != -1) {
+				target.splice(p, 1, item);
+				target.pop();
+			}
+		}
+	});
+
+	var resultList = [];
+	target.forEach(function (t){
+
+		var obj = {};
+		obj.values = [
+			{'ele':t.asks / t.sum, 'type':'提问数(%)'},
+			{'ele':t.answers / t.sum, 'type':'回答数(%)'},
+			{'ele':t.followers / t.sum, 'type':'跟随者数(%)'},
+			{'ele':t.agrees / t.sum, 'type':'赞同数(%)'}
+		];
+
+		obj.total = 1;
+		obj.name = t.name;
+		obj.sum = t.sum;
+
+		resultList.push(obj);
+	});
+
+	return resultList;
+}
+
+
+function clickFun(){
+    obj.change(document.getElementById('click_1').checked);
+}
+
+</script>
