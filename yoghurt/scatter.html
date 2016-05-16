@@ -27,12 +27,12 @@
 	<script type="text/javascript">
 		$(function () {
 			var APP = {
-				cache : {},
+				cache : {}, // 定义缓存，暂时没用，多图交互时会用到
 				FILE_PATHS : {
-					'data' : './data/data.json'
+					'data' : './data/data.json' // 指定的数据文件路径
 				},
-				DEBUG : true,
-				LOAD_LOCAL_FILE : true,
+				DEBUG : true, // 调试模式才可以打印log
+				LOAD_LOCAL_FILE : true, // 是否读取本地文件，修改后可以取远程接口的数据
 				log : function (k, v){
 					if (APP.DEBUG) {
 						if (window.console & console.log) {
@@ -44,27 +44,35 @@
 						}
 					}
 				},
-				containerID : '#main',
-				chartEl : null,
+				containerID : '#main', // echarts容器的id
+				chartEl : null, // echarts实例
 				init : function () {
+					// 1. 初始化容器，相当于声明以后要使用这个容器来绘制图表
 					APP.chartEl = echarts.init($(APP.containerID)[0]);
 
+					// 2. 获取数据文件 
 					getData(function (data){
 						
+						// 3. 处理数据，使之成为图表可用的数据结构
 						var json = APP.proccessData(data);
+
+						// 4. 根据配置项渲染图表
 						APP.renderChart(json);
 					});
 				},
 				proccessData : function (data) {
-					var ret = [],
-						keys = ['agrees', 'answers', 'asks', 'followers'];
+					var ret = [], // 处理后（含总数字段）的数据
+						keys = ['agrees', 'answers', 'asks', 'followers']; // 需要求和的四个字段
 
 					data.forEach(function (item){
 						var sum = 0;
+
+						// 对四个指标求值
 						keys.forEach(function (key){
 							sum += +item[key];
 						});
 
+						// 新生成的对象写入sum值
 						var newObj = {};
 						newObj['id'] = item['id'];
 						newObj['name'] = item['name'];
@@ -73,31 +81,39 @@
 						newObj['followers'] = (+item['followers']);
 						newObj['asks'] = (+item['asks']);
 						newObj['answers'] = (+item['answers']);
+						
 						ret.push(newObj);
 					});
+
+					// 按照sum字段（即四个指标的总数）降序排列
 					ret.sort(function (a, b){
 						return b['sum'] - a['sum'];
 					});
 					return ret;
 				},
 				getChartOption : function (data) {
+					// 四个字段的英文名称到中文名称的映射
 					var keyMap = {
 				    	'agrees' : '赞同',
 				    	'answers' : '回答',
 				    	'asks' : '提问',
 				    	'followers' : '跟随'
 				    };
+
+				    // 要显示的四个类型及数量
 				    var legends = {
 				    	'Top10':10, 
 				    	'Top30':30,
 				    	'Top50':50,
 				    	'Top100':100
 				    };
-					var dataMap = {};
-					var maxAsk = 0;
-					var maxAns = 0;
-					var maxAgrees = 0;
-					var maxFollow = 0;
+
+					var dataMap = {};// 保存了Top10, Top30, Top50, Top100的数据字典
+					var maxAsk = 0; // 最大的提问数
+					var maxAns = 0; // 最大的回答数
+					var maxAgrees = 0; // 最大的赞同数
+					var maxFollow = 0; // 最大的跟随数
+
 					data.forEach(function (item){
 						for (var key in legends) {
 							if (!dataMap[key]) {
@@ -111,7 +127,10 @@
 								+item['sum'],
 								item['name']
 							];
+
+
 							if (dataMap[key].length < legends[key]){
+								// 当目前的数据量处于图表显示类型的范围内时， 如Top10只需要前10个， Top30需要前30，依此类推
 								switch (key) {
 									case 'Top10':
 										if (dataMap[key].length < 10)
@@ -134,6 +153,8 @@
 								}
 							}
 						}
+
+						// 下边是分别更新最大的提问、回答、赞同以及跟随数
 						if (+item['asks'] > maxAsk) {
 							maxAsk = +item['asks'];
 						}
@@ -151,6 +172,7 @@
 						}
 					});
 
+					// 定义模型，后边会展示需要显示的字段
 					var schema = [
 					    {name: 'agrees', index: 0, text: '赞同'},
 					    {name: 'answers', index: 1, text: '回答'},
@@ -160,6 +182,7 @@
 					    {name: 'name', index: 5, text: '名字'}
 					];
 
+					// 每个数据点的样式
 					var itemStyle = {
 					    normal: {
 					        opacity: 0.8,
@@ -179,11 +202,12 @@
 				    		name : key,
 				    		type: 'scatter',
 				            itemStyle: itemStyle,
-				            data: dataMap[key]
+				            data: dataMap[key] // 根据Top10, Top30等传入相应的数据
 				    	});
 
 				    });
 
+				    // 这个图表配置项的生成， 参考echarts里散点图demo的数据结构
 					var option = {
 					    backgroundColor: '#333',
 					    color: [
@@ -209,6 +233,7 @@
 					        borderColor: '#777',
 					        borderWidth: 1,
 					        formatter: function (obj) {
+					        	// 提示框信息的格式化
 					            var value = obj.value;
 					            return '<div style="border-bottom: 1px solid rgba(255,255,255,.3); font-size: 18px;padding-bottom: 7px;margin-bottom: 7px">'
 					                + ' 姓名：' + value[5]
@@ -349,15 +374,30 @@
 					return option;
 				},
 				renderChart : function (json){
+					// 获取图表配置项
 					var option = APP.getChartOption(json);
+
+					// 渲染图表
 					APP.chartEl.setOption(option);
 				}
 			};
 
+			/**
+			 * [getData 获取绘制本图表需要的源数据]
+			 * @param  {Function} callback [回调函数]
+			 * @return {[type]}            [description]
+			 */
 			function getData (callback) {
 				getFile('data', callback);
 			}
 
+
+			/**
+			 * [getFile 获取文件内容的通用函数]
+			 * @param  {[type]}   fileName [文件名称，这个会取APP.FILE_PATHS里的映射路径]
+			 * @param  {Function} callback [获取文件内容后的回调函数]
+			 * @return {[type]}            [description]
+			 */
 			function getFile (fileName, callback) {
 				if (APP.cache[fileName]) {
 					callback && callback(APP.cache[fileName])
@@ -367,6 +407,7 @@
 						url : APP.FILE_PATHS[fileName],
 						cache : false,
 						success : function (data){
+							// 写入缓存
 							APP.cache[fileName] = data;
 							callback && callback(data);
 						},
@@ -377,7 +418,7 @@
 				}
 			};
 
-
+			// 初始化
 			APP.init();
 		});
 	</script>

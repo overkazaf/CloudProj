@@ -44,10 +44,21 @@ form {
 <script src="node_modules/jquery/dist/jquery.min.js" charset="utf-8"></script>
 <script src="d3.v3.min.js" charset="utf-8"></script>
 <script>
+/**
+ * [getJSONFile 获取JSON文件的数据]
+ * @param  {[type]}   fileName [文件名称]
+ * @param  {Function} callback [回调函数]
+ * @return {[type]}            [description]
+ */
 function getJSONFile(fileName, callback) {
     $.getJSON(fileName, callback);
 };
 
+/**
+ * [showInfo 鼠标悬浮后的信息展示]
+ * @param  {[type]} item [当前信息项]
+ * @return {[type]}      [description]
+ */
 function showInfo (item) {
 	var tpl = '';
 	tpl += '<h2>用户：' + item[5] + '</h2>';
@@ -59,16 +70,19 @@ function showInfo (item) {
 	$('#info').html(tpl);
 
 }
+
+// 全局的数据数组，将保存数据源内容
 var dataArray = [];
 getJSONFile('./data/data.json', function(data) {
-	var n = 4, // number of layers
-        m = 20; // number of samples per layer
+	var n = 4, // 一共展示数据项的四个指标
+        m = 20; // 前20个数据项
     var keys = ['asks', 'answers', 'agrees', 'followers'];
     data.forEach(function(item) {
         var sum = 0;
         keys.forEach(function(key) {
             sum += +item[key];
         });
+        // 为每个数据项新增总数字段
         dataArray.push(
             [
             	+item['agrees'], 
@@ -79,20 +93,18 @@ getJSONFile('./data/data.json', function(data) {
             ]);
     });
 
+    // 按总数这个字段降序排列
     dataArray.sort(function(a, b) {
         return b[4] - a[4];
     });
 
+    // 只处理前m个数据项
     dataArray = dataArray.splice(0, m);
-
-
-
 
     var
         stack = d3.layout.stack(),
         layers = stack(d3.range(n).map(function(d,i) {
         	var result = bumpLayer(m, i);
-        	console.log('res', result);
             return bumpLayer(m, i);
         })),
         yGroupMax = d3.max(layers, function(layer) {
@@ -232,7 +244,12 @@ getJSONFile('./data/data.json', function(data) {
             .attr("width", x.rangeBand());
     }
 
-    // Inspired by Lee Byron's test data generator.
+    /**
+     * [bumpLayer 数据项生成的策略]
+     * @param  {[type]} n    [数据项]
+     * @param  {[type]} type [数据指标类型]
+     * @return {[type]}      [description]
+     */
     function bumpLayer(n, type) {
 
         function bump(a) {
@@ -245,7 +262,10 @@ getJSONFile('./data/data.json', function(data) {
 
         var a = [],
             i;
+        // 初始化
         for (i = 0; i < n; ++i) a[i] = 0;
+
+        // 分别生成数据项里的每个指标(共四个)
         for (i = 0; i < 4; ++i) {
         	bump(a);
         }
