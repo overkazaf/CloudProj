@@ -52,7 +52,7 @@ $(window).load(function() {
     var convertData = function(data) {
         var res = [];
         for (var i = 0; i < data.length; i++) {
-            (function (i){
+            (function(i) {
                 var dataItem = data[i];
                 var fromCoord = geoCoordMap[dataItem[0].name];
                 var toCoord = geoCoordMap[dataItem[1].name];
@@ -60,26 +60,26 @@ $(window).load(function() {
                     res.push([{
                         coord: fromCoord,
                         tooltip: { // 让鼠标悬浮到此项时能够显示 `tooltip`。
-                                formatter: function(params) {
-                                    var ret = [];
-                                    ret.push('用户名：'+dataItem[1].username);
-                                    ret.push('');
-                                    ret.push('起点 / 终点');
-                                    ret.push(dataItem[0].name +' 到 ' +dataItem[1].name);
-                                    ret.push('');
-                                    ret.push('起始时间 / 结束时间');
-                                    ret.push(dataItem[0].stime + ' 至 ' + dataItem[0].stime);
-                                    ret.push('在线时长：' + dataItem[1].onlinetime);
-                                    ret.push('');
-                                    ret.push('MAC地址：' + dataItem[1].macadd);
-                                    ret.push('');
-                                    ret.push('流入流量 / 流出流量');
-                                    ret.push(dataItem[1].inflow + ' / ' + dataItem[1].outflow);
-                                    ret.push('总流量：' + dataItem[1].allflow);
+                            formatter: function(params) {
+                                var ret = [];
+                                ret.push('用户名：' + dataItem[1].username);
+                                ret.push('');
+                                ret.push('起点 / 终点');
+                                ret.push(dataItem[0].name + ' 到 ' + dataItem[1].name);
+                                ret.push('');
+                                ret.push('起始时间 / 结束时间');
+                                ret.push(dataItem[0].stime + ' 至 ' + dataItem[0].stime);
+                                ret.push('在线时长：' + dataItem[1].onlinetime);
+                                ret.push('');
+                                ret.push('MAC地址：' + dataItem[1].macadd);
+                                ret.push('');
+                                ret.push('流入流量 / 流出流量');
+                                ret.push(dataItem[1].inflow + ' / ' + dataItem[1].outflow);
+                                ret.push('总流量：' + dataItem[1].allflow);
 
-                                    return ret.join('<br />');
-                                }
+                                return ret.join('<br />');
                             }
+                        }
                     }, {
                         coord: toCoord
                     }]);
@@ -95,7 +95,17 @@ $(window).load(function() {
 
 
 
-
+    function getDefaultCoordData () {
+        var map = getCoordMap();
+        var data = [];
+        for (var attr in map) {
+            data.push({
+                name: attr,
+                value: map[attr]
+            });
+        }
+        return data;
+    }
     function initApp() {
 
         // 全局记录，按whole-data.json定义的数据模型生成
@@ -112,8 +122,84 @@ $(window).load(function() {
 
             $.get('node_modules/echarts/map/json/province/tianjin.json', function(chinaJson) {
                 echarts.registerMap('tianjin', chinaJson);
-                chart.setOption(getChartOption([]));
+                
+                var option = {
+                    backgroundColor: '#404a59',
+                    title: {
+                        text: APP.TITLE,
+                        subtext: APP.SUB_TITLE,
+                        left: 'center',
+                        textStyle: {
+                            color: '#fff'
+                        }
+                    },
+                    tooltip: {
+                        trigger: 'item',
+                        position: function (point, params, dom) {
+                          // 固定在顶部
+                          return [point[0], point[1]];
+                      }
+                    },
+                    legend: {
+                        orient: 'vertical',
+                        y: 'bottom',
+                        x: 'right',
+                        data: ['学校坐标'],
+                        textStyle: {
+                            color: '#fff'
+                        }
+                    },
+                    geo: {
+                        map: 'tianjin',
+                        label: {
+                            emphasis: {
+                                show: false
+                            }
+                        },
+                        roam: true,
+                        itemStyle: {
+                            normal: {
+                                areaColor: '#323c48',
+                                borderColor: '#111'
+                            },
+                            emphasis: {
+                                areaColor: '#2a333d'
+                            }
+                        }
+                    },
+                    series: [{
+                        name: '坐标点',
+                        type: 'effectScatter',
+                        coordinateSystem: 'geo',
+                        data: getDefaultCoordData(),
+                        symbolSize: 10,
+                        showEffectOn: 'render',
+                        rippleEffect: {
+                            brushType: 'stroke'
+                        },
+                        hoverAnimation: true,
+                        label: {
+                            normal: {
+                                formatter: '{b}',
+                                position: 'right',
+                                show: true
+                            }
+                        },
+                        itemStyle: {
+                            normal: {
+                                color: '#a6c84c',
+                                shadowBlur: 2,
+                                shadowColor: '#333'
+                            }
+                        },
+                        zlevel: 1
+                    }]
+                };
+
+                chart.setOption(option);
+                //chart.setOption(getChartOption([]));
             });
+
         });
     };
 
@@ -123,7 +209,6 @@ $(window).load(function() {
 
         timeLineData.forEach(function(item, index) {
             var data = getPathData(year, month, day, index);
-
             var color = ['#a6c84c', '#ffa022', '#46bee9'];
 
             var series = [];
@@ -131,6 +216,32 @@ $(window).load(function() {
                 ['天津', data]
             ].forEach(function(item, i) {
                 series.push({
+                    name: '坐标点',
+                    type: 'effectScatter',
+                    coordinateSystem: 'geo',
+                    data: getDefaultCoordData(),
+                    symbolSize: 10,
+                    showEffectOn: 'render',
+                    rippleEffect: {
+                        brushType: 'stroke'
+                    },
+                    hoverAnimation: true,
+                    label: {
+                        normal: {
+                            formatter: '{b}',
+                            position: 'right',
+                            show: true
+                        }
+                    },
+                    itemStyle: {
+                        normal: {
+                            color: '#a6c84c',
+                            shadowBlur: 2,
+                            shadowColor: '#333'
+                        }
+                    },
+                    zlevel: 1
+                }, {
                     type: 'lines',
                     name: item[0],
                     //type: 'lines',
@@ -145,7 +256,7 @@ $(window).load(function() {
                     lineStyle: {
                         normal: {
                             color: color[i],
-                            width: 0,
+                            width: 1,
                             curveness: 0.2
                         }
                     },
@@ -156,70 +267,20 @@ $(window).load(function() {
                     zlevel: 2,
                     effect: {
                         show: true,
-                        period: 6,
+                        period: 20,
                         trailLength: 0,
                         symbol: 'circle',
-                        symbolSize: 15
+                        symbolSize: 12
                     },
                     lineStyle: {
                         normal: {
-                            color: color[i],
+                            color: color[2],
                             width: 1,
                             opacity: 0.4,
                             curveness: 0.2
                         }
                     },
                     data: convertData(item[1])
-                },{
-                    name: item[0],
-                    type: 'effectScatter',
-                    coordinateSystem: 'geo',
-                    zlevel: 2,
-                    rippleEffect: {
-                        brushType: 'stroke'
-                    },
-                    label: {
-                        normal: {
-                            show: true,
-                            position: 'right',
-                            formatter: '{b}'
-                        }
-                    },
-                    symbolSize: function(val) {
-                        return val[2] / 8;
-                    },
-                    itemStyle: {
-                        normal: {
-                            color: color[i]
-                        }
-                    },
-                    data: item[1].map(function(dataItem) {
-                        return {
-                            name: dataItem[1].name,
-                            value: (geoCoordMap[dataItem[1].name]||geoCoordMap["天津商业大学"]).concat([dataItem[1].value]),
-                            tooltip: { // 让鼠标悬浮到此项时能够显示 `tooltip`。
-                                formatter: function(params) {
-                                    var ret = [];
-                                    ret.push('用户名：'+dataItem[1].username);
-                                    ret.push('');
-                                    ret.push('起点 / 终点');
-                                    ret.push(dataItem[0].name +' 到 ' +dataItem[1].name);
-                                    ret.push('');
-                                    ret.push('起始时间 / 结束时间');
-                                    ret.push(dataItem[0].stime + ' 至 ' + dataItem[0].stime);
-                                    ret.push('在线时长：' + dataItem[1].onlinetime);
-                                    ret.push('');
-                                    ret.push('MAC地址：' + dataItem[1].macadd);
-                                    ret.push('');
-                                    ret.push('流入流量 / 流出流量');
-                                    ret.push(dataItem[1].inflow + ' / ' + dataItem[1].outflow);
-                                    ret.push('总流量：' + dataItem[1].allflow);
-
-                                    return ret.join('<br />');
-                                }
-                            }
-                        };
-                    })
                 });
             });
 
@@ -326,7 +387,7 @@ $(window).load(function() {
         },
         bindTimelineEvent: function($ctx) {
             var that = this;
-            var setDate = function (){
+            var setDate = function() {
                 var date = $ctx.find('ul').first().find('li.active').text();
                 var day = $ctx.find('ul').last().find('li.active').text();
                 var ym = date.split('-');
@@ -336,8 +397,8 @@ $(window).load(function() {
                 day = day != '' ? day + '日' : '';
 
                 var dateText = '20' + year + '年' + month + '月' + day;
-                
-                if(!year) dateText = '';
+
+                if (!year) dateText = '';
 
                 $dateDom.find('h4').text(dateText);
             };
@@ -369,11 +430,11 @@ $(window).load(function() {
                         setDate();
                         break;
                 }
-                
+
             });
 
             var $dateDom = $('.reset-date');
-            $('#reset-date-btn').click(function (){
+            $('#reset-date-btn').click(function() {
                 var $aUl = $ctx.find('ul');
                 $ctx.find('.active').removeClass('active');
                 $aUl.first().show();
@@ -383,7 +444,7 @@ $(window).load(function() {
         }
     };
 
-    function getValidDays (year, month) {
+    function getValidDays(year, month) {
         var R = util.getCache('R');
         var months = R[year][month];
         var ret = [];
@@ -394,7 +455,7 @@ $(window).load(function() {
         return ret;
     }
 
-    function getSelectedDate ($ctx) {
+    function getSelectedDate($ctx) {
         var $aUl = $ctx.find('ul');
         var $firstUl = $aUl.first();
         var $lastUl = $aUl.last();
@@ -408,15 +469,15 @@ $(window).load(function() {
         year = '20' + year; // 修正简化版本的年格式
 
         var ret = {
-            year : year,
-            month : month,
-            day : day
+            year: year,
+            month: month,
+            day: day
         };
 
         return ret;
     }
 
-    function rerenderMap (json){
+    function rerenderMap(json) {
         var year = json.year;
         var month = json.month;
         var day = json.day;
@@ -455,7 +516,10 @@ $(window).load(function() {
                 }
             },
             tooltip: {
-                position: ["50%", "50%"],
+                position: function (point, params, dom) {
+                      // 固定在顶部
+                      return [point[0], point[1]];
+                  },
                 trigger: 'item'
             },
             legend: {
@@ -492,7 +556,7 @@ $(window).load(function() {
                 axisType: 'category',
                 symbol: 'circle',
                 symbolSize: 10,
-                realtime : true,
+                realtime: true,
                 data: getTimelineData(), // 24h
                 label: {
                     normal: {

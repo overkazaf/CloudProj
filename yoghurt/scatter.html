@@ -400,6 +400,7 @@
 			 */
 			function getFile (fileName, callback) {
 				if (APP.cache[fileName]) {
+					// 如果有缓存数据， 直接取缓存
 					callback && callback(APP.cache[fileName])
 				} else {
 					$.ajax({
@@ -418,7 +419,7 @@
 				}
 			};
 
-			// 初始化
+			// 应用程序初始化
 			APP.init();
 		});
 	</script>

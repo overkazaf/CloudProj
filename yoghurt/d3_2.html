@@ -24,16 +24,17 @@ form {
     right: 10px;
     top: 10px;
 }
+
 #info {
-	position: absolute;
-	right: 20px;
-	bottom: -200px;
-	width: 320px;
+    position: absolute;
+    right: 20px;
+    bottom: -200px;
+    width: 320px;
 }
 </style>
 <div id="info"></div>
 <div id="title">
-	<h2>知乎Top20用户数据统计展示</h2>
+    <h2>知乎Top20用户数据统计展示</h2>
 </div>
 <form>
     <label>
@@ -59,22 +60,24 @@ function getJSONFile(fileName, callback) {
  * @param  {[type]} item [当前信息项]
  * @return {[type]}      [description]
  */
-function showInfo (item) {
-	var tpl = '';
-	tpl += '<h2>用户：' + item[5] + '</h2>';
-	tpl += '<p><b>赞同</b>：' + item[0] + '</p>';
-	tpl += '<p><b>跟随</b>：' + item[1] + '</p>';
-	tpl += '<p><b>提问</b>：' + item[2] + '</p>';
-	tpl += '<p><b>回答</b>：' + item[3] + '</p>';
+function showInfo(item) {
+    var tpl = '';
+    tpl += '<h2>用户：' + item[5] + '</h2>';
+    tpl += '<p><b>赞同</b>：' + item[0] + '</p>';
+    tpl += '<p><b>跟随</b>：' + item[1] + '</p>';
+    tpl += '<p><b>提问</b>：' + item[2] + '</p>';
+    tpl += '<p><b>回答</b>：' + item[3] + '</p>';
 
-	$('#info').html(tpl);
+    $('#info').html(tpl);
 
 }
 
 // 全局的数据数组，将保存数据源内容
 var dataArray = [];
+
+// 获取数据文件
 getJSONFile('./data/data.json', function(data) {
-	var n = 4, // 一共展示数据项的四个指标
+    var n = 4, // 一共展示数据项的四个指标
         m = 20; // 前20个数据项
     var keys = ['asks', 'answers', 'agrees', 'followers'];
     data.forEach(function(item) {
@@ -84,40 +87,40 @@ getJSONFile('./data/data.json', function(data) {
         });
         // 为每个数据项新增总数字段
         dataArray.push(
-            [
-            	+item['agrees'], 
-            	+item['followers'],
-            	+item['asks'], 
-            	+item['answers'], 
+            [+item['agrees'], +item['followers'], +item['asks'], +item['answers'],
                 sum, item['name']
             ]);
     });
 
-    // 按总数这个字段降序排列
+    // 按sum这个字段对数据进行降序排列
     dataArray.sort(function(a, b) {
         return b[4] - a[4];
     });
 
-    // 只处理前m个数据项
+    // 只处理前m个数据项, 所以取前m个就好了
     dataArray = dataArray.splice(0, m);
 
     var
+        // 获取堆叠图的布局算法
         stack = d3.layout.stack(),
-        layers = stack(d3.range(n).map(function(d,i) {
-        	var result = bumpLayer(m, i);
-            return bumpLayer(m, i);
+        layers = stack(d3.range(n).map(function(d, i) {
+            var result = bumpLayer(m, i);
+            return result;
         })),
+        // 最大的单个柱形y坐标
         yGroupMax = d3.max(layers, function(layer) {
             return d3.max(layer, function(d) {
                 return d.y;
             });
         }),
+        // 最大的堆叠柱形y坐标
         yStackMax = d3.max(layers, function(layer) {
             return d3.max(layer, function(d) {
                 return d.y0 + d.y;
             });
         });
 
+    // 图表的上下左右四个边距
     var margin = {
             top: 40,
             right: 10,
@@ -127,30 +130,37 @@ getJSONFile('./data/data.json', function(data) {
         width = 960 - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom;
 
+    
+    // 为下一步分割x轴提供一个分割算法
     var x = d3.scale.ordinal()
         .domain(d3.range(m))
         .rangeRoundBands([0, width], .08);
 
+    // 为下一步分割y轴提供一个分割算法
     var y = d3.scale.linear()
         .domain([0, yStackMax])
         .range([height, 0]);
 
+    // 处理颜色渐变， #aad和#556是起始和终止的颜色
     var color = d3.scale.linear()
         .domain([0, n - 1])
         .range(["#aad", "#556"]);
 
+    // 按比例分割x轴
     var xAxis = d3.svg.axis()
         .scale(x)
         .tickSize(0)
         .tickPadding(6)
         .orient("bottom");
 
+    // 绘制图表的svg容器
     var svg = d3.select("body").append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+    // 每个layer代表不同的数据项，即赞同、回答、跟随、提问各以不同的layer作为一个容器
     var layer = svg.selectAll(".layer")
         .data(layers)
         .enter().append("g")
@@ -159,23 +169,29 @@ getJSONFile('./data/data.json', function(data) {
             return color(i);
         });
 
+
+    // 根据给定的数据绘制矩形的x方向
     var rect = layer.selectAll("rect")
         .data(function(d) {
             return d;
         })
         .enter().append("rect")
         .attr("x", function(d) {
+            // 绘制x坐标
             return x(d.x);
         })
         .attr("y", height)
         .attr("width", x.rangeBand())
         .attr("height", 0)
-        .on('mouseover', function (d, i){
-        	showInfo(dataArray[i]);
+        .on('mouseover', function(d, i) {
+            // 鼠标悬浮时显示提示第i项数据的详细信息
+            showInfo(dataArray[i]);
         });
 
+    // 绘制柱形的起始y坐标及高度
     rect.transition()
         .delay(function(d, i) {
+            // 根据序号延迟绘制
             return i * 10;
         })
         .attr("y", function(d) {
@@ -185,14 +201,17 @@ getJSONFile('./data/data.json', function(data) {
             return y(d.y0) - y(d.y0 + d.y);
         });
 
+    // 绘制x轴的刻度项
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis);
 
+    // 控制radio选中后切换图表
     d3.selectAll("input").on("change", change);
 
     var timeout = setTimeout(function() {
+        // 第一次， 4秒后自动切换另一个类型的图表
         d3.select("input[value=\"grouped\"]").property("checked", true).each(change);
     }, 4000);
 
@@ -202,6 +221,7 @@ getJSONFile('./data/data.json', function(data) {
         else transitionStacked();
     }
 
+    // 过度到分组图
     function transitionGrouped() {
         y.domain([0, yGroupMax]);
 
@@ -223,6 +243,7 @@ getJSONFile('./data/data.json', function(data) {
             });
     }
 
+    // 过度到堆叠图
     function transitionStacked() {
         y.domain([0, yStackMax]);
 
@@ -254,8 +275,9 @@ getJSONFile('./data/data.json', function(data) {
 
         function bump(a) {
             for (var i = 0; i < n; i++) {
-                (function (i){
-                	a[i] += dataArray[i][type];
+                (function(i) {
+                    // 取相应指标下的n个数据值
+                    a[i] += dataArray[i][type];
                 })(i);
             }
         }
@@ -267,7 +289,7 @@ getJSONFile('./data/data.json', function(data) {
 
         // 分别生成数据项里的每个指标(共四个)
         for (i = 0; i < 4; ++i) {
-        	bump(a);
+            bump(a);
         }
         var result = a.map(function(d, i) {
             return {
