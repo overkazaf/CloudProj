@@ -4,6 +4,7 @@ $(window).load(function() {
         TITLE: "无线联盟用户漫游监控系统",
         SUB_TITLE: "数据来自天津市教委网络中心",
         CANVAS_ID: 'main',
+        chartEl : null,
         buildVOList: function(data) {
             var voList = util.getCache('voList');
             for (var i = 0, l = data.length; i < l; i++) {
@@ -48,7 +49,7 @@ $(window).load(function() {
         }
     };
     var dom = $('#' + APP.CANVAS_ID)[0];
-    var chart = echarts.init(dom, 'shine');
+    var chart = APP.chartEl = echarts.init(dom, 'shine');
     var convertData = function(data) {
         var res = [];
         for (var i = 0; i < data.length; i++) {
@@ -91,10 +92,6 @@ $(window).load(function() {
 
     var geoCoordMap = getCoordMap();
 
-    var planePath = 'path://M1705.06,1318.313v-89.254l-319.9-221.799l0.073-208.063c0.521-84.662-26.629-121.796-63.961-121.491c-37.332-0.305-64.482,36.829-63.961,121.491l0.073,208.063l-319.9,221.799v89.254l330.343-157.288l12.238,241.308l-134.449,92.931l0.531,42.034l175.125-42.917l175.125,42.917l0.531-42.034l-134.449-92.931l12.238-241.308L1705.06,1318.313z';
-
-
-
     function getDefaultCoordData () {
         var map = getCoordMap();
         var data = [];
@@ -106,7 +103,43 @@ $(window).load(function() {
         }
         return data;
     }
+
+    function initArrow () {
+        var on = false;
+        $('.arrow').on('click', function () {
+            var $this = $(this);
+            if (!on) {
+                $('#hint').animate({
+                    left : 0
+                }, 150, function (){
+                    $this.text('<');
+                })
+            } else {
+                $('#hint').animate({
+                    left : "-125px"
+                }, 200, function (){
+                    $this.text('>');
+                });
+            }
+
+            on = !on;
+
+            $this.attr('data-on', on)
+        });
+
+        $('#hint').on('click', 'li', function (){
+            var text = $(this).text();
+            var hour = parseInt(text.split(':')[0]);
+            var currentOpt = APP.chartEl.getOption();
+            currentOpt.timeline[0].currentIndex = hour;
+            APP.chartEl.setOption(currentOpt);
+            $('[data-type="date"]').find('.active').click();
+        });
+    }
+
     function initApp() {
+
+        initArrow();
 
         // 全局记录，按whole-data.json定义的数据模型生成
         util.setCache('R', {});
@@ -374,6 +407,7 @@ $(window).load(function() {
                     tpl.push(tmp);
                 }
             } else {
+                console.log('given', given);
                 for (var i = 1, l = 31; i <= l; i++) {
                     var m = i;
                     m = m < 10 ? '0' + m : m;
@@ -401,6 +435,7 @@ $(window).load(function() {
                 if (!year) dateText = '';
 
                 $dateDom.find('h4').text(dateText);
+                $('#hint').find('.time-list').empty();
             };
 
             $ctx.find('ul').last().hide();
@@ -428,6 +463,8 @@ $(window).load(function() {
                         var dateObj = getSelectedDate($ctx);
                         rerenderMap(dateObj);
                         setDate();
+
+                        buildValidHints(dateObj);
                         break;
                 }
 
@@ -444,11 +481,46 @@ $(window).load(function() {
         }
     };
 
+
+    function buildValidHints (dateObj) {
+        var year = dateObj.year;
+        var month = dateObj.month;
+        var day = dateObj.day;
+
+        var R = util.getCache('R');
+        var dayMap = R[year][month][day];
+
+        var list = [];
+        for (var key in dayMap) {
+            if (dayMap[key].length) {
+                list.push(key);
+            }
+        }
+
+        var $timeList = $('#hint').find('.time-list');
+        $timeList.empty();
+
+        var tpl = '';
+        list.forEach(function(period){
+            var tmp = period < 10 ? '0' + period : period;
+            tmp += ':00';
+            tpl += '<li class="time-list-item">' + tmp + '</li>';
+        });
+
+        $timeList.html(tpl);
+
+        if (typeof $('#hint').attr('data-first') === 'undefined') {
+            $('#hint').find('.arrow').trigger('click');
+
+            $('#hint').attr('data-first', true);
+        }
+    }
+
     function getValidDays(year, month) {
         var R = util.getCache('R');
-        var months = R[year][month];
+        var months = R[year][parseInt(month)];
         var ret = [];
-        for (day in months) {
+        for (var day in months) {
             ret.push(day);
         }
 
@@ -557,6 +629,7 @@ $(window).load(function() {
                 symbol: 'circle',
                 symbolSize: 10,
                 realtime: true,
+                playInterval: 3000,
                 data: getTimelineData(), // 24h
                 label: {
                     normal: {

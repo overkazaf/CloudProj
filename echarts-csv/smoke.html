@@ -56,15 +56,12 @@
                 });
 
                 var target = {};
-                var keyWords = ["既往脑卒中", "既往短暂性脑缺血发作TIA", "高危", "中危", "低危"];
+                var keyWords = ["卒中", "TIA", "高危", "中危", "低危"];
                 keyWords.forEach(function(kw) {
                     target[kw] = [];
                 });
 
                 smokes.forEach(function(item) {
-                    if ('有' === item['既往脑卒中']) target['既往脑卒中'].push(1);
-                    if ('有' === item['既往短暂性脑缺血发作TIA']) target['既往脑卒中'].push(1);
-
                     var level = item['危险分级'];
                     if (level in target) {
                         target[level].push(1);
