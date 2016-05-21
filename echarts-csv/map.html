@@ -28,7 +28,7 @@
             SUB_TITLE: '地图子标题',
             SERIES_NAME: '序列标题',
             FILE_TO_READ: 'basic',
-            NEED_TO_MERGE: !0,
+            NEED_TO_MERGE: 0,
             MERGE_FILE: 'history',
             MERGE_KEY: '病案号',
             FILE_PATH: {
@@ -114,20 +114,21 @@
                 var parsed = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
 
                 var target = {
-                    '既往脑卒中':[],
-                    '既往短暂性脑缺血发作TIA':[],
+                    '卒中':[],
+                    'TIA':[],
                     '高危':[],
                     '中危':[],
                     '低危':[]
                 };
 
                 parsed.forEach(function (item){
-                    if ('有' === item['既往脑卒中'])target['既往脑卒中'].push(item);
-                    if ('有' === item['既往短暂性脑缺血发作TIA'])target['既往短暂性脑缺血发作TIA'].push(item);
+                    
 
                     if ('高危' === item['危险级']) target['高危'].push(item);
                     if ('中危' === item['危险级']) target['中危'].push(item);
                     if ('低危' === item['危险级']) target['低危'].push(item);
+                    if ('TIA' === item['危险级']) target['TIA'].push(item);
+                    if ('卒中' === item['危险级']) target['卒中'].push(item);
                 })
 
                 APP.cache['proccessData'] = target;
@@ -137,10 +138,43 @@
             },
             displayCityInfo : function (cityName) {
                 var cityList = findCitiesByAreaName(cityName, APP.getScatterJSON());
-                var json = cityList2JSON(cityList)
-                var result = APP.buildTooltipFormatter(json);
+                if (cityList.length) {
+                    var json = cityList2JSON(cityList)
+                    var tpl = APP.buildTooltipFormatter(json);
+                    tpl.unshift(cityName + '<br />');
+                } else {
+                    var subMap = {};
+                    var sum = 0;
+                    var tpl = [];
+                    var json = APP.getScatterJSON();
+                    for (var attr in json) {
+                        if (!subMap[attr]) {
+                            subMap[attr] = 0;
+                        }
 
-                $('.tooltip-box-body').html(result.join('<br />'));
+                        var list = json[attr];
+                        for (var i = 0, l = list.length; i < l; i++) {
+                            var item = list[i];
+                            if (item['行政区划'].indexOf(cityName) >= 0) {
+                                subMap[attr]++;
+                                sum++;
+                            }
+                        }
+                    }
+
+                    tpl.push(cityName);
+                    if (!!sum) {
+                        for (var attr in subMap) {
+                            tpl.push(attr + " : " + subMap[attr] + "  (" + new Number(subMap[attr]/sum * 100).toFixed(2) + "%)");
+                        }
+
+                        tpl.push('总数：' + sum);
+                    } else {
+                        tpl.push('暂无数据');
+                    }
+                }
+
+                $('.tooltip-box-body').html(tpl.join('<br />'));
                 $('.tooltip-box').show();
             },
             render: function(json) {
@@ -153,20 +187,21 @@
 
                 fn();
 
-                APP.chart.on('mouseover', function () {
-                    var _args = arguments;
-                    clearTimeout(timeout);
-                    timeout = setTimeout(function (){
-                        _this_.renderScatter(json, _args[0].name);
-                    }, 500)
-                })
-
                 var timeout;
-                APP.chart.on('mouseout', function (){
-                    clearTimeout(timeout);
-                    timeout = setTimeout(fn, 500)
-                    //APP.chart.setOption(option);
-                });
+                // APP.chart.on('mouseover', function () {
+                //     var _args = arguments;
+                //     clearTimeout(timeout);
+                //     timeout = setTimeout(function (){
+                //         _this_.renderScatter(json, _args[0].name);
+                //     }, 500)
+                // })
+
+                
+                // APP.chart.on('mouseout', function (){
+                //     clearTimeout(timeout);
+                //     timeout = setTimeout(fn, 500)
+                //     //APP.chart.setOption(option);
+                // });
 
                 APP.chart.on('click', function () {
                     APP.displayCityInfo(arguments[0].name);
@@ -183,8 +218,12 @@
                     var sum = 0;
                     for (var attr in r) {
                         sum += r[attr];
-                        tpl += attr + ' : ' + r[attr] + ' <br />';
                     }
+
+                    for (var attr in r) {
+                        tpl += attr + ' : ' + r[attr] + '   (' + new Number(r[attr]/sum * 100).toFixed(2) +'%) <br />';
+                    }
+
                     result.push(c);
                     result.push(tpl);
                     result.push('总数：' + sum + '<br />');
@@ -246,7 +285,7 @@
                         trigger: 'item',
                         formatter: function (params) {
                             var json = getCityJSON(params.name);
-
+                            return params.name;
                             var result = APP.buildTooltipFormatter(json);
 
                             return result.join('<br />');
@@ -312,7 +351,7 @@
 
         function cityList2JSON (list) {
             var ret = {};
-            var legendData = ['既往脑卒中', '既往短暂性脑缺血发作TIA', '高危', '中危', '低危'];
+            var legendData = ['卒中', 'TIA', '高危', '中危', '低危'];
             list.forEach(function (item){
                 for (var cityName in item) {
 
@@ -325,13 +364,11 @@
                         if (!ret[cityName][x])ret[cityName][x] = 0; 
                     }
 
-
-                    if ('有' === current['既往脑卒中'])ret[cityName]['既往脑卒中']++;
-                    if ('有' === current['既往短暂性脑缺血发作TIA'])ret[cityName]['既往短暂性脑缺血发作TIA']++;
-
                     if ('高危' === current['危险级']) ret[cityName]['高危']++;
                     if ('中危' === current['危险级']) ret[cityName]['中危']++;
                     if ('低危' === current['危险级']) ret[cityName]['低危']++;
+                    if ('TIA' === current['危险级']) ret[cityName]['TIA']++;
+                    if ('卒中' === current['危险级']) ret[cityName]['卒中']++;
                 }
             });
             return ret;
@@ -341,8 +378,9 @@
             var legendData = [];
             var seriesData = [];
             var map = {};
+            var sumMap = {};
 
-            var xData = ['既往脑卒中', '既往短暂性脑缺血发作TIA', '高危', '中危', '低危']
+            var xData = ['卒中', 'TIA', '高危', '中危', '低危']
 
             for (var i = 0, l = xData.length; i < l; i++) {
                 var key = xData[i];
@@ -354,30 +392,51 @@
                 //legendData.push(attr);
 
                 var list = json[attr];
-
                 list.forEach(function(item) {
                     var city = parseCityName(item);
 
                     xData.forEach(function (x){
                         if (!map[x][city])map[x][city]=0;
                     })
-
-                    if ('有' === item['既往脑卒中']) map['既往脑卒中'][city]++;
-
-                    if ('有' === item['既往短暂性脑缺血发作TIA']) map['既往短暂性脑缺血发作TIA'][city]++;
-
-                    if ('高危' === item['危险级'])map['高危'][city]++;
                     
-                    if ('中危' === item['危险级'])map['中危'][city]++;
+                    if (!sumMap[city]) {
+                        sumMap[city] = 0;
+                    }
 
-                    if ('低危' === item['危险级'])map['低危'][city]++;
+                    if ('高危' === item['危险级']){
+                        map['高危'][city]++;
+                        sumMap[city]++;
+                    }
+                    
+                    if ('中危' === item['危险级']){
+                        map['中危'][city]++;
+                        sumMap[city]++;
+                    }
+
+                    if ('低危' === item['危险级']){
+                        map['低危'][city]++;
+                        sumMap[city]++;
+                    }
+
+                    if ('TIA' === item['危险级']){
+                        map['TIA'][city]++;
+                        sumMap[city]++;
+                    }
+
+                    if ('卒中' === item['危险级']){
+                        map['卒中'][city]++;
+                        sumMap[city]++;
+                    }
                 });
+            }
 
+            for (var attr in json) {
                 var tplData = [];
                 var currentType = map[attr];
+
                 for (var city in currentType) {
-                    var sum = getSum(city, map);
-                    var cityCount = map['既往脑卒中'][city] || 0;
+                    var sum = sumMap[city];
+                    var cityCount = map['卒中'][city] || 0;
                     var cr = getColorRange(cityCount, sum);
                     tplData.push({
                         name : city,
@@ -403,7 +462,80 @@
                 }
 
                 seriesData.push(tpl);
+
+                var subCities = getSubCities(json);
+                var subData = [];
+
+                
+                for (var i = 0, l = subCities.length; i < l; i++) {
+                    var city = subCities[i];
+                    subData.push({
+                        name : city,
+                        value : getGEOCoordMap()[city]
+                    });
+                }
+
+                var subCityTpl = {
+                    name: city,
+                    type: 'scatter',
+                    coordinateSystem: 'geo',
+                    data: subData,
+                    symbolSize: 20,
+                    tooltip : {
+                        trigger: 'item', 
+                        formatter : function (params){
+                            var city = params['name'];
+                            var subMap = {};
+                            var sum = 0;
+                            var tpl = [];
+                            for (var attr in json) {
+                                if (!subMap[attr]) {
+                                    subMap[attr] = 0;
+                                }
+
+                                var list = json[attr];
+                                for (var i = 0, l = list.length; i < l; i++) {
+                                    var item = list[i];
+                                    if (item['行政区划'].indexOf(city) >= 0) {
+                                        subMap[attr]++;
+                                        sum++;
+                                    }
+                                }
+                            }
+
+                            tpl.push(city);
+                            if (!!sum) {
+                                for (var attr in subMap) {
+                                    tpl.push(attr + " : " + subMap[attr] + "  (" + new Number(subMap[attr]/sum * 100).toFixed(2) + "%)");
+                                }
+
+                                tpl.push('总数：' + sum);
+                            } else {
+                                tpl.push('暂无数据');
+                            }
+
+                            return tpl.join('<br />');
+                        }
+                    },
+                    label: {
+                        normal: {
+                            show: false
+                        },
+                        emphasis: {
+                            show: false
+                        }
+                    },
+                    itemStyle: {
+                        emphasis: {
+                            borderColor: '#fff',
+                            borderWidth: 1
+                        }
+                    }
+                };
+
+                seriesData.push(subCityTpl);
             }
+
 
 
             var option = {
@@ -413,7 +545,26 @@
                     left: 'center'
                 },
                 tooltip: {
-                    trigger: 'item'
+                    trigger: 'item', 
+                    formatter : function (params){
+                        var city = params['name'];
+                        var tpl = [];
+                        
+                        tpl.push(city);
+
+                        if (city in sumMap) {
+                            for (var i = 0, l = xData.length; i < l; i++) {
+                                tpl.push(xData[i] + ' : ' + map[xData[i]][city] + "  (" + new Number(map[xData[i]][city]/sumMap[city] * 100).toFixed(2) + "%)");
+                            }
+
+                            tpl.push('总数：' + sumMap[city]);
+                        } else {
+                            tpl.push('暂无数据');
+                        }
+                        
+
+                        return tpl.join('<br />');
+                    }
                 },
                 legend: {
                     orient: 'vertical',
@@ -465,7 +616,6 @@
                 series: seriesData
             };
 
-
             return option;
         }
 
@@ -487,7 +637,6 @@
         };
 
         function getColorRange (cnt, sum) {
-            return cnt;
             if (sum > 0) {
                 var p = parseFloat(cnt / sum);
                 if (p > 0.03) {
@@ -559,6 +708,32 @@
             return targetList;
         }
 
+        function getSubCities (json) {
+            var subCityMap = {};
+            for (var attr in json) {
+                var list = json[attr];
+                for (var i = 0, l = list.length; i < l; i++) {
+                    var area = list[i]['行政区划'];
+                    var city = parseCityName(list[i]);
+                    var subCity = "";
+
+                    if (area.indexOf("省") >= 0) {
+                        subCity = area.substring(area.indexOf("省")+1, area.indexOf('市'));
+                    } else if (area.indexOf('市') == city.length) {
+                        subCity = undefined;
+                    } else {
+                        subCity = area.substring(area.indexOf(city) + city.length, area.indexOf('市'));
+                    }
+
+                    if (!!subCity) {
+                        subCityMap[subCity] = true;
+                    }
+                    
+                }
+            }
+            return Object.keys(subCityMap);
+        }
+
         function getGEOCoordMap () {
             var map = {
                 "海门":[121.15,31.89],
@@ -603,6 +778,7 @@
                 "汕头":[116.69,23.39],
                 "昆山":[120.95,31.39],
                 "宁波":[121.56,29.86],
+                "宁德":[119.52,26.65],
                 "湛江":[110.359377,21.270708],
                 "揭阳":[116.35,23.55],
                 "荣成":[122.41,37.16],
