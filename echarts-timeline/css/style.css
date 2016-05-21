@@ -90,3 +90,75 @@ body {
     color: #ffffff;
     font-weight: bold;
 }
+
+#hint {
+        position: fixed;
+        left: -125px;
+        top: 20px;
+        width: 150px;
+        height: 560px;
+        background: #ccc;
+        overflow:hidden;
+        z-index: 3;
+        margin: 0;
+        padding: 0;
+        border-radius:  0 15px 15px 0;
+        box-shadow: 1px 1px 5px #444;
+    }
+    
+    #hint .arrow {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 25px;
+        height: 560px;
+        background: #222;
+        line-height: 560px;
+        text-align: center;
+        color: #ffffff;
+        font-size: 20px;
+        cursor: pointer;
+        border-left: 1px solid #eee;
+        transition: all .3s ease-in-out;
+        -webkit-transition: all .3s ease-in-out;
+        -moz-transition: all .3s ease-in-out;
+        -ms-transition: all .3s ease-in-out;
+        -o-transition: all .3s ease-in-out;
+    }
+
+    #hint .arrow:hover {
+        background: #000;
+    }
+    
+    #hint .time-list {
+        margin: 0;
+        padding: 0 0 100px 0;
+        width: 100%;
+        height: 560px;
+        text-align: center;
+        overflow-y: auto;
+        list-style-type: none;
+    }
+
+    #hint h4 {text-align: center;text-indent: -25px;}
+
+    #hint .time-list .time-list-item {
+        width: 100%;
+        height: 20px;
+        line-height: 20px;
+        text-indent: -25px;
+        font-size: 16px;
+        background: #333;
+        color: #fff;
+        cursor: pointer;
+        transition: all .3s ease-in-out;
+        -webkit-transition: all .3s ease-in-out;
+        -moz-transition: all .3s ease-in-out;
+        -ms-transition: all .3s ease-in-out;
+        -o-transition: all .3s ease-in-out;
+    }
+
+    #hint .time-list .time-list-item:hover {
+        background: #eeff00;
+        color:#000000;
+    }
